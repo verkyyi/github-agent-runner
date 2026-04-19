@@ -115,7 +115,7 @@ Full details — including the two-pass tweak rationale, verification grep count
 skills/
   discover/
     SKILL.md                       # /sidekick:discover logic and hard rules
-    catalog.md                     # curated workflow catalog (stub until scope-lock)
+    catalog.md                     # curated workflow catalog (7 entries)
   install/
     SKILL.md                       # /sidekick:install logic and hard rules
     auth.md                        # OAuth vs. API-key decision tree
