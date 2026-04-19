@@ -65,6 +65,20 @@ Then inside Claude Code:
 
 Inspects your repo's shape (language, test presence, CI configuration, recent activity) using only local `git` and filesystem tools — no external API calls. Loads the curated [catalog](skills/discover/catalog.md) and recommends up to 3 workflows that fit, each with a one-sentence reason specific to your repo and an estimated setup friction level. Hands off directly to `/sidekick:install` once you pick one.
 
+#### Available catalog workflows
+
+| Workflow | Purpose | Setup friction |
+|---|---|---|
+| [issue-triage](skills/discover/catalog.md#issue-triage) | Labels issues, detects spam, and posts analysis comments automatically | Low |
+| [pr-nitpick-reviewer](skills/discover/catalog.md#pr-nitpick-reviewer) | On-demand style/best-practice review via `/nit` on any PR | Low |
+| [markdown-linter](skills/discover/catalog.md#markdown-linter) | Runs Super Linter on Markdown on a weekday schedule; files issues for violations | Low |
+| [pr-fix](skills/discover/catalog.md#pr-fix) | Analyzes CI failures and pushes a fix commit via `/pr-fix` | Medium |
+| [weekly-issue-summary](skills/discover/catalog.md#weekly-issue-summary) | Posts a weekly Discussion with issue-activity trends and recommendations | Medium |
+| [daily-malicious-code-scan](skills/discover/catalog.md#daily-malicious-code-scan) | Scans recent commits for secrets, obfuscation, and supply-chain red flags | Low |
+| [daily-repo-status](skills/discover/catalog.md#daily-repo-status) | Creates a daily issue summarizing activity with productivity insights | Low |
+
+All catalog entries require Claude auth (OAuth or API-key). See [skills/install/auth.md](skills/install/auth.md) for the decision tree.
+
 ### `/sidekick:install`
 
 Takes a workflow name (or prompts you to run `/sidekick:discover` first) and:
@@ -135,8 +149,6 @@ Changes to `skills/*/SKILL.md` take effect on the next Claude Code session reloa
 
 Once v0.1 is scope-locked:
 
-1. Fill in `skills/discover/catalog.md` with curated entries (5–8 workflows from the `githubnext/agentics` catalog)
-2. Update `plugin.json` with the final author name and repository URL
-3. Submit via `claude.ai/settings/plugins/submit` or `platform.claude.com/plugins/submit`
-
-> The catalog is intentionally empty until scope-lock — this prevents anchoring recommendations before curation is complete.
+1. ~~Fill in `skills/discover/catalog.md` with curated entries~~ — catalog populated with 7 entries.
+2. Update `plugin.json` with the final author name and repository URL.
+3. Submit via `claude.ai/settings/plugins/submit` or `platform.claude.com/plugins/submit`.
