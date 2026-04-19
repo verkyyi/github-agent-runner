@@ -68,7 +68,7 @@ All require Claude auth — see `../install/auth.md` for the OAuth vs API-key de
 ## daily-repo-status
 
 - **Upstream source**: `githubnext/agentics/workflows/daily-repo-status.md`
-- **One-line purpose**: Creates a daily GitHub issue summarising recent activity (issues, PRs, releases, code changes) with productivity insights and recommended next steps.
+- **One-line purpose**: Creates a daily GitHub issue summarizing recent activity (issues, PRs, releases, code changes) with productivity insights and recommended next steps.
 - **Fits repos that**: have a small team or solo maintainer who wants a morning briefing; track multiple concurrent workstreams; close older status issues automatically.
 - **Setup friction**: low — one secret (Claude auth), fully automatic once installed.
 - **Auth requirement**: either
