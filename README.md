@@ -152,5 +152,5 @@ Changes to `skills/*/SKILL.md` take effect on the next Claude Code session reloa
 Once v0.1 is scope-locked:
 
 1. ~~Fill in `skills/discover/catalog.md` with curated entries~~ — catalog populated with 7 entries.
-2. Update `plugin.json` with the final author name and repository URL.
+2. ~~Update `plugin.json` with the final author name and repository URL.~~ — updated in PR #7 with `verkyyi` author and repository URLs.
 3. Submit via `claude.ai/settings/plugins/submit` or `platform.claude.com/plugins/submit`.
