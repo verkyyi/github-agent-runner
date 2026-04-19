@@ -1,6 +1,6 @@
 {
   "last_run": "2026-04-19",
-  "last_run_id": "24635972720",
+  "last_run_id": "24636492652",
   "comments_made": {
     "6": "2026-04-19"
   },
@@ -17,5 +17,5 @@
     "month": "2026-04",
     "created": "2026-04-19"
   },
-  "notes": "Issue #2 ([aw] No-Op Runs) - auto-managed, no action. Issue #10 is the failed eng PR (blocked by protected files, instructions there for manual apply). PRs #8 and #9 merged into main. Only open PR is #6 (docs: document infra workflows + vscode tooling). PR #6 had a rebase conflict (README.md layout block); conflict resolved 2026-04-19 run #24635972720 and comment with apply instructions posted. Monthly Activity issue is #11."
+  "notes": "Issue #2 ([aw] No-Op Runs) - auto-managed, no action. Issue #10 is the failed eng PR (blocked by protected files, instructions there for manual apply). PRs #14 and #15 are open draft docs PRs from update-docs bot. PR #6 (docs: document infra workflows + vscode tooling) was rebased onto origin/main on 2026-04-19 run #24636492652 — conflict resolved by keeping weekly-research, agentics-maintenance.yml, and copilot-setup-steps.yml all three layout lines; branch pushed via push_to_pull_request_branch, comment added to PR #6. Monthly Activity issue is #11."
 }
