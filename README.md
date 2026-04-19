@@ -134,8 +134,14 @@ skills/
     markdown-linter.{md,lock.yml}
     pr-nitpick-reviewer.{md,lock.yml}
     weekly-research.{md,lock.yml}
+    agentics-maintenance.yml       # auto-generated; expires workflow-created issues/discussions/PRs
+    copilot-setup-steps.yml        # installs gh-aw for GitHub Copilot Agent
     shared/
       reporting.md                 # shared reporting component (run-link formatting)
+
+.vscode/
+  mcp.json                         # wires gh aw mcp-server into VS Code's MCP integration
+  settings.json                    # enables GitHub Copilot for Markdown files
 ```
 
 `.lock.yml` files are marked as `linguist-generated` and `merge=ours` in `.gitattributes` to prevent spurious merge conflicts.
@@ -147,6 +153,8 @@ claude --plugin-dir .
 ```
 
 Changes to `skills/*/SKILL.md` take effect on the next Claude Code session reload. Changes to `.lock.yml` files can be validated at any time with `gh aw validate` (safe — does not recompile).
+
+**VS Code users**: `.vscode/mcp.json` wires `gh aw mcp-server` into VS Code's MCP integration automatically — no extra setup needed.
 
 ## Publishing
 
