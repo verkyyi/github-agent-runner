@@ -17,7 +17,7 @@ This repo also **dogfoods seven of those workflows on itself**, so you can see e
 
 | Workflow | Trigger | Purpose |
 |---|---|---|
-| [repo-assist](.github/workflows/repo-assist.md) | Every 12 h + `/repo-assist` | Labels issues, comments to unblock contributors, opens draft PRs for bug fixes and improvements |
+| [repo-assist](.github/workflows/repo-assist.md) | Every 12 h + `/repo-assist` + 👀 reaction | Labels issues, comments to unblock contributors, opens draft PRs for bug fixes and improvements |
 | [daily-plan](.github/workflows/daily-plan.md) | Daily | Analyzes repo state and maintains a rolling project-plan Discussion |
 | [update-docs](.github/workflows/update-docs.md) | Every push to `main` | Detects documentation drift and opens draft PRs to keep docs in sync with code changes |
 | [q](.github/workflows/q.md) | `/q` or 🚀 reaction | Expert workflow optimizer — audits live logs, identifies inefficiencies, opens optimization PRs |
@@ -41,6 +41,7 @@ To run the installed workflows on your own fork:
 - The appropriate secret set on the repository:
   - OAuth path: `CLAUDE_CODE_OAUTH_TOKEN`
   - API-key path: `ANTHROPIC_API_KEY`
+- GitHub Discussions enabled (required by `daily-plan` — uses the "announcements" category — and `weekly-research` — uses the "ideas" category)
 
 See [skills/install/auth.md](skills/install/auth.md) for the complete auth decision tree.
 
