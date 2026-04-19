@@ -11,7 +11,7 @@ Host repo for the **sidekick** Claude Code plugin — conversational discovery a
 1. **Discover** — recommends 1–3 agentic workflows from a curated catalog that match your repo's shape (language, CI setup, activity level, etc.).
 2. **Install** — walks you through fetching, authenticating, and wiring up each workflow end-to-end, including the OAuth token tweak that makes your Claude subscription work inside GitHub Actions.
 
-This repo also **dogfoods six of those workflows on itself**, so you can see exactly how they're configured.
+This repo also **dogfoods seven of those workflows on itself**, so you can see exactly how they're configured.
 
 ## Installed workflows
 
@@ -23,8 +23,9 @@ This repo also **dogfoods six of those workflows on itself**, so you can see exa
 | [q](.github/workflows/q.md) | `/q` or 🚀 reaction | Expert workflow optimizer — audits live logs, identifies inefficiencies, opens optimization PRs |
 | [markdown-linter](.github/workflows/markdown-linter.md) | Weekdays at 14:00 UTC | Runs Super Linter on Markdown; opens time-limited issues for violations |
 | [pr-nitpick-reviewer](.github/workflows/pr-nitpick-reviewer.md) | `/nit` on a PR | Inline style and best-practice review (up to 10 comments, non-blocking) |
+| [weekly-research](.github/workflows/weekly-research.md) | Weekly (Monday) | Strategic research across Anthropic policy, plugin ecosystem, gh-aw upstream, competitors, and solo-founder hiring signal |
 
-All six use `engine: claude` and are pre-configured with the [OAuth token tweak](skills/install/auth.md) so they run on your Claude subscription rather than billing the API per-token.
+All seven use `engine: claude` and are pre-configured with the [OAuth token tweak](skills/install/auth.md) so they run on your Claude subscription rather than billing the API per-token.
 
 ## Prerequisites
 
@@ -117,6 +118,7 @@ skills/
     q.{md,lock.yml}
     markdown-linter.{md,lock.yml}
     pr-nitpick-reviewer.{md,lock.yml}
+    weekly-research.{md,lock.yml}
     shared/
       reporting.md                 # shared reporting component (run-link formatting)
 ```
