@@ -3,9 +3,9 @@
   "description": "Conversational discovery and install of GitHub agent workflows (gh-aw), with auth setup that respects your Claude subscription.",
   "version": "0.1.0",
   "author": {
-    "name": "TBD"
+    "name": "verkyyi"
   },
-  "homepage": "https://github.com/TBD/github-agent-runner",
-  "repository": "https://github.com/TBD/github-agent-runner",
+  "homepage": "https://github.com/verkyyi/github-agent-runner",
+  "repository": "https://github.com/verkyyi/github-agent-runner",
   "license": "MIT"
 }
