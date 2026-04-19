@@ -64,6 +64,10 @@ jobs:
             echo "needs-linting=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Fix super-linter log permissions
+        if: always()
+        run: sudo chmod a+r super-linter.log 2>/dev/null || true
+
       - name: Upload super-linter log
         if: always()
         uses: actions/upload-artifact@v7
