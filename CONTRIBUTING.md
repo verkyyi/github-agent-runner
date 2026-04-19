@@ -40,9 +40,9 @@ skills/
 
 ## What to contribute
 
-### Adding catalog entries (highest priority)
+### Adding catalog entries
 
-The catalog at `skills/discover/catalog.md` is the core product value of sidekick. It is currently a stub pending curation. Before adding an entry:
+The catalog at `skills/discover/catalog.md` is the core product value of sidekick. It currently contains 7 curated entries. Before adding a new entry:
 
 1. Find the workflow in the [`githubnext/agentics`](https://github.com/githubnext/agentics) catalog.
 2. Install it locally with `gh aw add <workflow>` and verify it works end-to-end.
@@ -51,7 +51,7 @@ The catalog at `skills/discover/catalog.md` is the core product value of sidekic
 Each entry must use the template defined in `catalog.md`:
 
 ```markdown
-### <workflow-name>
+## <workflow-name>
 
 - **Upstream source**: `<path-in-githubnext/agentics>` or URL
 - **One-line purpose**: <what it does for the repo owner>
@@ -60,7 +60,7 @@ Each entry must use the template defined in `catalog.md`:
 - **Auth requirement**: OAuth path / API-key path / either
 ```
 
-Quality over quantity. Aim for 5–8 entries you would personally recommend, not an exhaustive list.
+Quality over quantity. Aim for entries you would personally recommend, not an exhaustive list.
 
 ### Adding a skill
 
