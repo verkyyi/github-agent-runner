@@ -19,6 +19,15 @@ claude --plugin-dir .
 
 `--plugin-dir .` tells Claude Code to load the plugin manifest from `.claude-plugin/plugin.json` and discover skills in `skills/*/SKILL.md`. The plugin runs entirely locally — no build step, no compilation.
 
+### VS Code + GitHub Copilot
+
+If you use VS Code, two configuration files activate automatically when you open the repository:
+
+- `.vscode/mcp.json` — registers `gh aw mcp-server` as an MCP server named `github-agentic-workflows`, giving Copilot Agent access to gh-aw tooling without any manual setup.
+- `.vscode/settings.json` — enables GitHub Copilot for Markdown files so you get completions and inline chat while editing skill and workflow sources.
+
+No manual activation is needed.
+
 ## How the plugin works
 
 ```
