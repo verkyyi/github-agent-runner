@@ -14,9 +14,10 @@ echo ""
 # Test 1: Purpose + upstream source (one Skill-tool load covers both).
 echo "Test 1: Skill loads and documents its upstream source..."
 output=$(run_claude "Use the Skill tool to load the github-agent-runner plugin's discover-workflows skill, then answer: (1) in one sentence what is its purpose? and (2) what upstream repository does it fetch its workflow list from at runtime? Quote the upstream repo path exactly as it appears in SKILL.md." 180)
-# Recognition regex is broad: Claude may quote the skill name OR the
-# signature upstream repo — either proves it loaded the right skill.
-assert_contains "$output" "discover-workflows|Discover Workflows|githubnext/agentics" "Skill is recognized" || exit 1
+# Deterministic: check the session transcript for a Skill tool invocation
+# against the discover-workflows skill, not Claude's prose mentioning the
+# name. Structural, variance-free.
+assert_skill_used "discover-workflows" "Skill tool invoked for discover-workflows" || exit 1
 assert_contains "$output" "agentics|gh-aw|upstream|catalog" "Mentions source (agentics / gh-aw / catalog)" || exit 1
 assert_contains "$output" "recommend|suggest|shortlist|tailor|fit|pick" "Frames itself as recommendation, not listing" || exit 1
 

@@ -4,43 +4,64 @@
 # Adapted from Jesse Vincent's superpowers plugin (MIT license):
 #   https://github.com/obra/superpowers/blob/main/tests/claude-code/test-helpers.sh
 #
-# Single deviation: run_claude honors a PLUGIN_DIR env var, so tests can
-# exercise the plugin in-place without requiring a prior marketplace install.
+# Two additions over upstream:
+#   1. run_claude honors a PLUGIN_DIR env var (exercise plugin in-place).
+#   2. Every claude -p call is captured as a JSONL session transcript, and
+#      assert_skill_used greps the transcript for a Skill tool-use event.
+#      This is the deterministic "did Claude actually load the skill" check
+#      superpowers uses (commit obra/superpowers@24ca8cd9), which eliminates
+#      the "Claude's prose doesn't happen to mention the skill name" flake.
 
-# Run Claude Code with a prompt and capture output.
+# Path to the most recent run_claude invocation's JSONL transcript.
+# Populated after every run_claude call. Consumed by assert_skill_used.
+LAST_TRANSCRIPT=""
+
+# Run Claude Code with a prompt. Returns the text response to stdout, and
+# leaves the full stream-json transcript at $LAST_TRANSCRIPT for structural
+# assertions (assert_skill_used).
+#
 # Usage: run_claude "prompt text" [timeout_seconds] [allowed_tools]
-# Honors PLUGIN_DIR env var (passes --plugin-dir if set).
+# Honors PLUGIN_DIR (passes --plugin-dir if set) and CLAUDE_MODEL (passes
+# --model if set — CI doesn't set it; preserves real-user model parity).
 run_claude() {
     local prompt="$1"
     local timeout="${2:-60}"
     local allowed_tools="${3:-}"
-    local output_file
-    output_file=$(mktemp)
+    local transcript
+    transcript=$(mktemp -t claude-transcript-XXXXXX.jsonl)
+    LAST_TRANSCRIPT="$transcript"
 
-    local cmd="claude -p \"$prompt\""
-    if [ -n "${PLUGIN_DIR:-}" ]; then
-        cmd="$cmd --plugin-dir=\"$PLUGIN_DIR\""
-    fi
-    if [ -n "$allowed_tools" ]; then
-        cmd="$cmd --allowed-tools=$allowed_tools"
-    fi
-    # Optional CLAUDE_MODEL override. CI does NOT set this — we intentionally
-    # run the same default model real users get, so regressions visible to them
-    # are visible in CI too. Local devs can export CLAUDE_MODEL=claude-haiku-*
-    # for a faster iteration loop; assertions are tuned for Sonnet/Opus output,
-    # so Haiku may fail on wording-specific checks.
-    if [ -n "${CLAUDE_MODEL:-}" ]; then
-        cmd="$cmd --model \"$CLAUDE_MODEL\""
-    fi
+    # --output-format stream-json gives us a line-per-event NDJSON transcript,
+    # which we keep for assert_skill_used. --verbose is required by the CLI
+    # when pairing stream-json with --print.
+    #
+    # --permission-mode bypassPermissions + --allowed-tools=all: CI runs
+    # claude -p from tests/ (or wherever run-tests.sh cd'd to), so by default
+    # the sandbox denies reads to ../skills/*.md — Claude answers "I need
+    # permission to read that file" and the assertion flakes. Superpowers'
+    # test harness uses the same pair (docs/testing.md:236-244); adopting
+    # the same defaults here keeps parity with their validated approach.
+    # Caller can override allowed_tools to a narrower set if needed.
+    local tools_flag="--allowed-tools=${allowed_tools:-all}"
+    local cmd="claude -p \"$prompt\" --output-format stream-json --verbose --permission-mode bypassPermissions $tools_flag"
+    [ -n "${PLUGIN_DIR:-}" ]      && cmd="$cmd --plugin-dir=\"$PLUGIN_DIR\""
+    [ -n "${CLAUDE_MODEL:-}" ]    && cmd="$cmd --model \"$CLAUDE_MODEL\""
 
-    if timeout "$timeout" bash -c "$cmd" > "$output_file" 2>&1; then
-        cat "$output_file"
-        rm -f "$output_file"
+    if timeout "$timeout" bash -c "$cmd" > "$transcript" 2>&1; then
+        # Extract the final assembled text response for grep-based assertions.
+        # `result` event in stream-json carries the full final response; if jq
+        # can't find one (cli variant / malformed), fall back to raw transcript.
+        local text
+        text=$(jq -rs 'map(select(.type=="result") | .result // .text // empty) | .[]' "$transcript" 2>/dev/null)
+        if [ -n "$text" ]; then
+            echo "$text"
+        else
+            cat "$transcript"
+        fi
         return 0
     else
         local exit_code=$?
-        cat "$output_file" >&2
-        rm -f "$output_file"
+        cat "$transcript" >&2
         return $exit_code
     fi
 }
@@ -98,4 +119,34 @@ assert_order() {
     fi
 }
 
-export -f run_claude assert_contains assert_not_contains assert_order
+# Deterministic "Claude invoked the Skill tool for this skill" assertion —
+# structural, not prose-dependent. Greps the JSONL transcript from the most
+# recent run_claude call for a tool_use event naming the Skill tool and the
+# target skill. Much more robust than grepping Claude's natural-language
+# response for the skill name, which varies run-to-run with model sampling.
+#
+# Pattern inspired by superpowers' skill-triggering/run-test.sh:60-68.
+#
+# Usage: assert_skill_used "skill-name" "test description"
+assert_skill_used() {
+    local skill_name="$1" test_name="${2:-skill loaded via Skill tool}"
+    if [ -z "$LAST_TRANSCRIPT" ] || [ ! -f "$LAST_TRANSCRIPT" ]; then
+        echo "  [FAIL] $test_name — no transcript captured (run_claude first)"
+        return 1
+    fi
+    # Tool-use events in stream-json look like:
+    #   {"type":"assistant","message":{"content":[{"type":"tool_use","name":"Skill","input":{"skill":"discover-workflows",...}}...]}}
+    # Grep handles the two attributes together rather than structurally parsing, which is
+    # more forgiving of minor CLI version changes in event shape.
+    if grep -q '"name":"Skill"' "$LAST_TRANSCRIPT" \
+       && grep -qE "\"skill\"[[:space:]]*:[[:space:]]*\"[^\"]*${skill_name}\"" "$LAST_TRANSCRIPT"; then
+        echo "  [PASS] $test_name"
+        return 0
+    else
+        echo "  [FAIL] $test_name — Skill tool was not invoked for '$skill_name'"
+        echo "  Transcript: $LAST_TRANSCRIPT"
+        return 1
+    fi
+}
+
+export -f run_claude assert_contains assert_not_contains assert_order assert_skill_used

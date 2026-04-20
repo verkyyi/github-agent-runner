@@ -14,10 +14,9 @@ echo ""
 # Test 1: Load skill body + quote the exact commands it uses.
 echo "Test 1: Skill loads; quotes the exact gh-aw and gh-secret commands..."
 output=$(run_claude "Use the Skill tool to load the github-agent-runner plugin's install-workflow skill (read the full SKILL.md body, not just the description). Then quote two exact commands from its Flow section: (a) the gh-aw CLI command that fetches and compiles a workflow, and (b) the gh command that sets the auth secret. Quote them verbatim, including the subcommand names." 180)
-# Recognition regex includes the signature command — if Claude quotes
-# 'gh aw add' verbatim (the next assertion checks this), it by definition
-# loaded the correct skill, even if it didn't repeat the skill name in prose.
-assert_contains "$output" "install-workflow|Install Workflow|gh aw add|installs? (a |the )?workflow" "Skill is recognized" || exit 1
+# Deterministic: check the session transcript for a Skill tool invocation
+# against install-workflow.
+assert_skill_used "install-workflow" "Skill tool invoked for install-workflow" || exit 1
 assert_contains "$output" "gh aw add" "Quotes 'gh aw add' verbatim" || exit 1
 assert_contains "$output" "gh secret set" "Quotes 'gh secret set' verbatim" || exit 1
 

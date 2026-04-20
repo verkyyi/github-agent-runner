@@ -14,10 +14,9 @@ echo ""
 # Test 1: Load skill + name all four roles.
 echo "Test 1: Skill loads and names all four roles..."
 output=$(run_claude "Use the Skill tool to load the github-agent-runner plugin's install-agent-team skill (full SKILL.md, not just the description). Then list the four roles it installs by name — the skill calls them out explicitly. Count and confirm there are exactly four." 180)
-# Recognition regex includes the role suffixes: Claude's concise answers
-# may skip the skill name entirely but will always list the agent names
-# ("spec-agent", "planner-agent", etc.) which are unique to this skill.
-assert_contains "$output" "install-agent-team|agent.?team|spec.?agent|planner.?agent|implementer.?agent|reviewer.?agent" "Skill is recognized" || exit 1
+# Deterministic: check the session transcript for a Skill tool invocation
+# against install-agent-team.
+assert_skill_used "install-agent-team" "Skill tool invoked for install-agent-team" || exit 1
 assert_contains "$output" "four" "Mentions four (roles/workflows/agents)" || exit 1
 assert_contains "$output" "spec" "Names the spec role" || exit 1
 assert_contains "$output" "plan" "Names the planner role" || exit 1
