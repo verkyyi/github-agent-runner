@@ -50,6 +50,41 @@ command -v gh >/dev/null || { echo "gh CLI required"; exit 1; }
 command -v aws >/dev/null || { echo "aws CLI required"; exit 1; }
 command -v claude >/dev/null || { echo "claude CLI required"; exit 1; }
 
+# Preflight: required gh scopes. `repo` for create, `delete_repo` for teardown.
+check_gh_scope() {
+    local scope="$1"
+    gh auth status 2>&1 | grep -q "'$scope'" \
+        || { echo "Missing gh scope: $scope"; echo "  Fix: gh auth refresh -h github.com -s $scope"; exit 1; }
+}
+check_gh_scope repo
+[ "$KEEP" = true ] || check_gh_scope delete_repo
+
+# Cleanup with two guards to prevent accidental deletion of real repos:
+#  1. Name must match the timestamped e2e-throwaway pattern.
+#  2. Repo must be less than 2 hours old.
+# Script-driven only — the AI agent invoked via claude -p does not run this.
+E2E_REPO_PATTERN='install-workflow-e2e-[0-9]{14}$'
+cleanup_repo() {
+    local repo="$1"
+    local short="${repo##*/}"
+    if ! [[ "$short" =~ $E2E_REPO_PATTERN ]]; then
+        echo "  REFUSING to delete $repo — name does not match e2e-throwaway pattern ($E2E_REPO_PATTERN)"
+        return 1
+    fi
+    local created_at
+    created_at=$(gh api "/repos/$repo" --jq '.created_at' 2>/dev/null) || { echo "  Repo $repo not found"; return 1; }
+    local age=$(( $(date -u +%s) - $(date -u -d "$created_at" +%s) ))
+    if [ "$age" -gt 7200 ]; then
+        echo "  REFUSING to delete $repo — age ${age}s exceeds 2-hour threshold (created $created_at)"
+        return 1
+    fi
+    if ! gh repo delete "$repo" --yes 2>&1; then
+        echo "  FAILED to delete $repo — check delete_repo scope"
+        return 1
+    fi
+    echo "  Deleted $repo (age ${age}s)"
+}
+
 fails=0
 pass() { echo "  [PASS] $1"; }
 fail() { echo "  [FAIL] $1"; fails=$((fails+1)); }
@@ -140,7 +175,7 @@ grep -q "INSTALL_WORKFLOW_E2E_DONE" "$WORKDIR/skill-output.log" \
 echo ""
 if [ "$fails" -eq 0 ] && [ "$KEEP" != true ]; then
   echo "-- All green; deleting throwaway repo --"
-  gh repo delete "$FULL" --yes 2>&1 | tail -1
+  cleanup_repo "$FULL" || fails=$((fails+1))
   rm -rf "$WORKDIR"
 else
   echo "-- Kept: $FULL (repo) and $WORKDIR (logs) --"
