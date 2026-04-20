@@ -7,14 +7,41 @@
 #
 # Run manually before releases or on a weekly cron. Costs ~20-30 min + Claude
 # tokens (free on OAuth subscription).
+#
+# Usage:
+#   ./tests/test-e2e.sh [--install-from-ref <branch-or-sha>] [--restore-after <ref>]
+#
+# --install-from-ref   Before dispatching the canned task, reinstall the four
+#                      agent-team workflows on the playground from this ref of
+#                      verkyyi/github-agent-runner (typically your PR branch).
+#                      Requires a local clone of the playground at PLAYGROUND_DIR
+#                      (default: ~/projects/agent-team-playground). Pushes a
+#                      commit to the playground's main so GH Actions picks it up.
+# --restore-after      After the test completes, reinstall from this ref and push.
+#                      Typical value: main. Skips if unset (playground stays on
+#                      --install-from-ref's version).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 HISTORY_FILE="$SCRIPT_DIR/e2e-history.jsonl"
 PLAYGROUND="${PLAYGROUND:-verkyyi/agent-team-playground}"
+PLAYGROUND_DIR="${PLAYGROUND_DIR:-$HOME/projects/agent-team-playground}"
+SOURCE_REPO="${SOURCE_REPO:-verkyyi/github-agent-runner}"
 POLL_INTERVAL=30                # seconds between polls
 POLL_BUDGET=2100                # 35 min polling ceiling
 YELLOW_MULTIPLIER=150           # per-mille: 150% of baseline = yellow
+
+INSTALL_FROM_REF=""
+RESTORE_AFTER=""
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --install-from-ref) INSTALL_FROM_REF="$2"; shift 2 ;;
+        --restore-after)    RESTORE_AFTER="$2";    shift 2 ;;
+        --help|-h)
+            sed -n '1,25p' "$0"; exit 0 ;;
+        *) echo "Unknown option: $1"; exit 1 ;;
+    esac
+done
 
 # Exit codes: 0 green, 1 red (hard fail), 2 yellow (regression warning)
 EXIT_CODE=0
@@ -27,6 +54,30 @@ warn() { echo "  [WARN] $1"; WARN_LINES+=("$1"); [ $EXIT_CODE -eq 0 ] && EXIT_CO
 
 command -v gh >/dev/null || { echo "gh CLI required"; exit 1; }
 command -v jq >/dev/null || { echo "jq required"; exit 1; }
+
+# Reinstall the 4 agent-team workflows on the playground from a specific ref,
+# reapply the OAuth tweak, commit, push. Destructive — pushes to playground main.
+reinstall_from_ref() {
+    local ref="$1"
+    [ -d "$PLAYGROUND_DIR/.git" ] || { echo "Expected playground clone at $PLAYGROUND_DIR (set PLAYGROUND_DIR)"; exit 1; }
+    echo ""
+    echo "-- Reinstalling agent-team workflows from $SOURCE_REPO@$ref --"
+    (
+        cd "$PLAYGROUND_DIR"
+        git fetch origin main --quiet && git checkout main --quiet && git pull --ff-only --quiet
+        for wf in reviewer-agent implementer-agent planner-agent spec-agent; do
+            rm -f ".github/workflows/${wf}.md" ".github/workflows/${wf}.lock.yml"
+            gh aw add "$SOURCE_REPO/catalog/agent-team/${wf}.md@${ref}" 2>&1 | grep -E "^(✓|✗)" | tail -1
+            sed -i 's/ANTHROPIC_API_KEY/CLAUDE_CODE_OAUTH_TOKEN/g' ".github/workflows/${wf}.lock.yml"
+            sed -i 's/--exclude-env CLAUDE_CODE_OAUTH_TOKEN/--exclude-env ANTHROPIC_API_KEY/g' ".github/workflows/${wf}.lock.yml"
+        done
+        git add .github/workflows/ && git commit -m "[e2e] install agent-team@${ref}" --quiet
+        git push origin main --quiet
+        echo "  Pushed playground at $(git rev-parse --short HEAD)"
+    )
+}
+
+[ -n "$INSTALL_FROM_REF" ] && reinstall_from_ref "$INSTALL_FROM_REF"
 
 STAMP=$(date -u +%Y%m%d%H%M%S)
 FUNC_NAME="greet_$STAMP"
@@ -156,7 +207,10 @@ entry=$(jq -cn --arg stamp "$STAMP" --argjson issue "$ISSUE_NUM" \
 echo "$entry" >> "$HISTORY_FILE"
 echo "Recorded to $HISTORY_FILE"
 
-# --- 8. Summary ---
+# --- 8. Optional restore ---
+[ -n "$RESTORE_AFTER" ] && reinstall_from_ref "$RESTORE_AFTER"
+
+# --- 9. Summary ---
 echo ""
 case $EXIT_CODE in
   0) echo "=== GREEN: all assertions passed; no regression vs. baseline ===" ;;

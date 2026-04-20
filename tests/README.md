@@ -53,15 +53,23 @@ Exit codes from `test-e2e.sh`: `0` = green, `1` = red (hard failure — pipeline
 ## Running tier-3
 
 ```bash
-# Run once (manual, ~20-35 min):
+# Run once against the current playground state (manual, ~20-35 min):
 ./tests/test-e2e.sh
 
+# Test an unmerged catalog change on a PR branch (reinstalls workflows
+# on the playground from the branch, runs the canned task, optionally
+# restores the playground to main after):
+git push origin my-feature-branch
+./tests/test-e2e.sh --install-from-ref my-feature-branch --restore-after main
+
 # Against a different playground:
-PLAYGROUND=<owner>/<repo> ./tests/test-e2e.sh
+PLAYGROUND=<owner>/<repo> PLAYGROUND_DIR=/path/to/clone ./tests/test-e2e.sh
 
 # Tighten the yellow-band threshold (default: 150% of last run):
 YELLOW_MULTIPLIER=130 ./tests/test-e2e.sh
 ```
+
+`--install-from-ref` is the pre-merge knob: edits to `catalog/agent-team/*.md` only reach the playground after `gh aw add`, so plain `test-e2e.sh` exercises whatever's currently installed, not your working tree. Push your branch and pass `--install-from-ref <branch>` to test the PR version against the live playground.
 
 Each run appends to `tests/e2e-history.jsonl` (committed). The first run has no baseline — it establishes one. Every subsequent run flags yellows against the immediately prior entry.
 
