@@ -85,7 +85,7 @@ Never test by committing untested changes to `main`. The installed workflows run
 
 ## Workflow files
 
-The `.github/workflows/` directory contains seven dogfooded workflows. These are managed by `gh aw` — do not edit `.lock.yml` files by hand except to apply the OAuth tweak described in [skills/install-workflow/auth.md](skills/install-workflow/auth.md).
+The `.github/workflows/` directory contains three dogfooded workflows (`daily-repo-status`, `update-docs`, `weekly-research`). These are managed by `gh aw` — do not edit `.lock.yml` files by hand except to apply the OAuth tweak described in [skills/install-workflow/auth.md](skills/install-workflow/auth.md).
 
 If a workflow `.md` source needs changing:
 
@@ -98,7 +98,7 @@ If a workflow `.md` source needs changing:
 
 1. Fork the repo and create a branch: `git checkout -b <type>/<short-description>`
 2. Make changes and test locally.
-3. Open a draft PR against `main`. Draft PRs trigger the `pr-nitpick-reviewer` workflow on `/nit` — use it for style feedback before marking ready.
+3. Open a draft PR against `main`. Mark the PR ready for review once you've verified the skill changes locally.
 4. The `update-docs` workflow runs on every push to `main` and will open a follow-up PR if your change creates a documentation gap.
 
 Branch naming conventions:

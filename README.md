@@ -70,7 +70,7 @@ To run the installed workflows on your own repo:
   - API-key path: `ANTHROPIC_API_KEY`
 - GitHub Discussions enabled if you install `weekly-research` (uses the "ideas" category)
 
-See [skills/install-workflow/auth.md](skills/install-workflow/auth.md) for the complete auth decision tree.
+See [skills/install-workflow/auth.md](skills/install-workflow/auth.md) for the complete auth decision tree, or [docs/troubleshooting.md](docs/troubleshooting.md) for quick diagnostics.
 
 ## Authentication
 
@@ -144,6 +144,9 @@ catalog/
     weekly-research.{md,lock.yml}
     shared/
       reporting.md                 # shared reporting component (run-link formatting)
+
+docs/
+  troubleshooting.md              # quick diagnostics for auth, discovery, and installation issues
 ```
 
 `.lock.yml` files are marked as `linguist-generated` and `merge=ours` in `.gitattributes` to prevent spurious merge conflicts.
