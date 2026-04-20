@@ -68,7 +68,7 @@ To run the installed workflows on your own repo:
 - The appropriate secret set on the repository:
   - OAuth path: `CLAUDE_CODE_OAUTH_TOKEN`
   - API-key path: `ANTHROPIC_API_KEY`
-- GitHub Discussions enabled if you install `daily-plan` (uses the "announcements" category) or `weekly-research` (uses the "ideas" category)
+- GitHub Discussions enabled if you install `weekly-research` (uses the "ideas" category)
 
 See [skills/install-workflow/auth.md](skills/install-workflow/auth.md) for the complete auth decision tree.
 
@@ -89,20 +89,17 @@ Full details — including the two-pass tweak rationale, verification grep count
 
 ## Running on this repo
 
-This repo dogfoods eight workflows on itself, so you can see exactly how they're wired up in practice:
+This repo dogfoods three workflows on itself, chosen as genuinely useful for a small plugin project (not as a showcase of everything in the catalog):
 
 | Workflow | Trigger | Purpose |
 |---|---|---|
 | [daily-repo-status](.github/workflows/daily-repo-status.md) | Daily | Opens a `[repo-status]` issue summarizing recent activity — the recommended first-run starter |
-| [repo-assist](.github/workflows/repo-assist.md) | Every 12 h + `/repo-assist` + 👀 reaction | Labels issues, comments to unblock contributors, opens draft PRs for bug fixes and improvements |
-| [daily-plan](.github/workflows/daily-plan.md) | Daily | Analyzes repo state and maintains a rolling project-plan Discussion |
 | [update-docs](.github/workflows/update-docs.md) | Every push to `main` | Detects documentation drift and opens draft PRs to keep docs in sync with code changes |
-| [q](.github/workflows/q.md) | `/q` or 🚀 reaction | Expert workflow optimizer — audits live logs, identifies inefficiencies, opens optimization PRs |
-| [markdown-linter](.github/workflows/markdown-linter.md) | Weekdays at 14:00 UTC | Runs Super Linter on Markdown; opens time-limited issues for violations |
-| [pr-nitpick-reviewer](.github/workflows/pr-nitpick-reviewer.md) | `/nit` on a PR | Inline style and best-practice review (up to 10 comments, non-blocking) |
 | [weekly-research](.github/workflows/weekly-research.md) | Weekly (Monday) | Strategic research across Anthropic policy, plugin ecosystem, gh-aw upstream, competitors, and solo-founder hiring signal |
 
-All eight use `engine: claude` and are pre-configured with the [OAuth token tweak](skills/install-workflow/auth.md).
+All three use `engine: claude` and are pre-configured with the [OAuth token tweak](skills/install-workflow/auth.md). The agent-team pattern under [catalog/agent-team/](catalog/agent-team/README.md) is *not* installed here — it lives in a separate playground repo, since running it here would aim the implementer agent at this repo's own code.
+
+Other workflows from the catalog — `repo-assist`, `q`, `pr-nitpick-reviewer`, `daily-plan`, `markdown-linter` — are valuable on the right repo but were dropped here as too heavy or low-signal for a small solo-maintained plugin. All remain a `/install-workflow` away.
 
 ## Multi-workflow patterns
 
@@ -143,12 +140,7 @@ catalog/
     agentics-maintenance.yml       # standard GHA workflow: gh-aw version maintenance
     copilot-setup-steps.yml        # standard GHA workflow: Copilot coding agent environment setup
     daily-repo-status.{md,lock.yml}
-    repo-assist.{md,lock.yml}
-    daily-plan.{md,lock.yml}
     update-docs.{md,lock.yml}
-    q.{md,lock.yml}
-    markdown-linter.{md,lock.yml}
-    pr-nitpick-reviewer.{md,lock.yml}
     weekly-research.{md,lock.yml}
     shared/
       reporting.md                 # shared reporting component (run-link formatting)
