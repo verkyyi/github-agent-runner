@@ -9,6 +9,7 @@ description: |
 on:
   issues:
     types: [labeled]
+    names: [state:plan-needed]
 
 concurrency:
   group: agent-team-issue-${{ github.event.issue.number }}

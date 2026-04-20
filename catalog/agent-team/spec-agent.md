@@ -9,6 +9,7 @@ description: |
 on:
   issues:
     types: [labeled]
+    names: [agent-team]
 
 concurrency:
   group: agent-team-issue-${{ github.event.issue.number }}

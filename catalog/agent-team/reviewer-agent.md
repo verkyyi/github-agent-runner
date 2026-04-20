@@ -10,6 +10,7 @@ description: |
 on:
   pull_request:
     types: [labeled]
+    names: [agent-team]
 
 concurrency:
   group: agent-team-pr-${{ github.event.pull_request.number }}
