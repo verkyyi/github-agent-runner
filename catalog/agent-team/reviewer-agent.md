@@ -55,7 +55,7 @@ tools:
 
 safe-outputs:
   add-comment:
-    max: 2
+    max: 3
     target: "*"
   add-labels:
     allowed: [state:done, state:impl-needed, state:blocked, agent-team:reviewed]
@@ -121,6 +121,28 @@ Post a single comment on the **PR**, wrapped exactly like this:
 Then take the **one** action matching the verdict:
 
 - **Approve** → Add `state:done` to the issue, add `agent-team:reviewed` to the PR. Remove `state:review-needed` from the issue. **Do not merge.** **Do not dispatch.** Pipeline finishes here — a human merges the PR.
+
+  **After the verdict comment, post one additional pipeline-summary comment on the _issue_** (not the PR) so the human has a single jump-off point. Use exactly this shape:
+
+  ```markdown
+  <!-- agent-team:summary issue=${{ inputs.issue_number }} -->
+  ## ✅ Pipeline complete — ready for human review
+
+  | Stage | Run |
+  |---|---|
+  | Spec | [${{ github.server_url }}/${{ github.repository }}/actions/runs/<spec-run-id>](…) |
+  | Plan | [${{ github.server_url }}/${{ github.repository }}/actions/runs/<plan-run-id>](…) |
+  | Impl | [${{ github.server_url }}/${{ github.repository }}/actions/runs/<impl-run-id>](…) |
+  | Review | [${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}](…) |
+
+  **PR**: #${{ inputs.pr_number }} — draft, awaiting your merge.
+  **Iterations**: ${{ inputs.iteration }} (kickback rounds before approval).
+
+  🤖 agent-team / reviewer
+  <!-- /agent-team:summary -->
+  ```
+
+  To fill in the `<spec-run-id>`, `<plan-run-id>`, `<impl-run-id>` fields: use `gh run list --workflow=<name>.yml --json databaseId,createdAt,conclusion --limit 10` and pick the most recent successful run of each stage that precedes yours in time. If a run-id lookup fails for any stage, write `(run link unavailable)` in that row instead of guessing — don't block the pipeline on a cosmetic link.
 
 - **Kickback** → Add `state:impl-needed` to the issue (cosmetic breadcrumb). Remove `state:review-needed`. **Dispatch the implementer-agent workflow** with:
     - `issue_number`: from your input
