@@ -124,7 +124,10 @@ esac
 # --- 4. Output-correctness assertions (only meaningful if state:done) ---
 PR_NUM=""
 if [ "$TERMINAL" = "done" ]; then
-  PR_NUM=$(gh pr list --repo "$PLAYGROUND" --search "E2E: add ${FUNC_NAME} in:title" --json number --jq '.[0].number // empty')
+  # FUNC_NAME is timestamped and unique. The implementer drops my "E2E:" issue
+  # prefix and names the PR "[agent-team] Add <func>()..." — search by FUNC_NAME
+  # alone (which is the only stable, unique string across issue + PR titles).
+  PR_NUM=$(gh pr list --repo "$PLAYGROUND" --state all --search "${FUNC_NAME} in:title" --json number --jq '.[0].number // empty')
   if [ -z "$PR_NUM" ]; then
     fail "No PR found for issue #$ISSUE_NUM"
   else
@@ -149,7 +152,9 @@ if [ "$TERMINAL" = "done" ]; then
     fi
   fi
 
-  summary=$(gh issue view "$ISSUE_NUM" --repo "$PLAYGROUND" --json comments --jq '.comments[] | select(.body | contains("<!-- agent-team:summary")) | .body' | tail -1)
+  # Match the visible heading, not the optional HTML marker — the reviewer
+  # sometimes drops the marker but the header is reliably emitted.
+  summary=$(gh issue view "$ISSUE_NUM" --repo "$PLAYGROUND" --json comments --jq '.comments[] | select(.body | contains("Pipeline complete")) | .body' | tail -1)
   [ -n "$summary" ] && pass "Pipeline-summary comment posted on issue" || fail "No pipeline-summary comment on issue"
 fi
 echo ""
