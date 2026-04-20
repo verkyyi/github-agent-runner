@@ -74,18 +74,31 @@ Edit the relevant `SKILL.md` or data file. Test by running the skill locally wit
 
 ## Testing
 
-There is no automated test harness for skills — they are instruction sets interpreted by Claude Code, not code with unit tests. The validation steps are:
+The `tests/` directory contains a prompt-based test suite that invokes Claude Code headlessly (`claude -p`) with questions about each skill and asserts patterns against the response. If an edit removes a critical instruction or introduces contradictions, Claude's description of the skill will drift and the assertion fails.
+
+```bash
+./tests/run-tests.sh                    # run all tests
+./tests/run-tests.sh --verbose          # show per-assertion output
+./tests/run-tests.sh --test test-install-workflow.sh
+./tests/run-tests.sh --timeout 600      # per-test timeout in seconds
+```
+
+See [`tests/README.md`](tests/README.md) for requirements, expected runtime (~4–5 minutes), and coverage details. Each run burns modest tokens against your Claude account.
+
+**After any SKILL.md change**, run the relevant test file to confirm the skill description hasn't drifted. Manual validation steps are also required:
 
 1. **Load the plugin**: `claude --plugin-dir .` — confirm no startup errors.
 2. **Run the skill manually**: invoke `/discover-workflows` or `/install-workflow` and walk through the flow.
 3. **Validate lock files** (if you changed `.lock.yml` files): `gh aw validate` — safe, does not recompile.
 4. **Check grep counts** (if you applied the OAuth tweak): see [skills/install-workflow/auth.md](skills/install-workflow/auth.md#step-4--verify-the-tweak-shape).
 
+**Adding a test**: see `tests/README.md` — create `tests/test-<skill-name>.sh`, add it to the `tests=()` array in `run-tests.sh`, and make it executable.
+
 Never test by committing untested changes to `main`. The installed workflows run on push to `main`, so a broken install skill or a bad `.lock.yml` will trigger a live workflow run.
 
 ## Workflow files
 
-The `.github/workflows/` directory contains seven dogfooded workflows. These are managed by `gh aw` — do not edit `.lock.yml` files by hand except to apply the OAuth tweak described in [skills/install-workflow/auth.md](skills/install-workflow/auth.md).
+The `.github/workflows/` directory contains eight dogfooded workflows. These are managed by `gh aw` — do not edit `.lock.yml` files by hand except to apply the OAuth tweak described in [skills/install-workflow/auth.md](skills/install-workflow/auth.md).
 
 If a workflow `.md` source needs changing:
 
