@@ -132,6 +132,13 @@ skills/
     weekly-research.{md,lock.yml}
     shared/
       reporting.md                 # shared reporting component (run-link formatting)
+
+tests/
+  run-tests.sh                         # test runner (--verbose, --test, --timeout flags)
+  test-helpers.sh                      # shared assert helpers (assert_contains, assert_order, …)
+  test-discover-workflows.sh           # headless assertions for /discover-workflows
+  test-install-workflow.sh             # headless assertions for /install-workflow
+  README.md                            # how to run tests and add new ones
 ```
 
 `.lock.yml` files are marked as `linguist-generated` and `merge=ours` in `.gitattributes` to prevent spurious merge conflicts.

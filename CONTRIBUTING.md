@@ -74,7 +74,14 @@ Edit the relevant `SKILL.md` or data file. Test by running the skill locally wit
 
 ## Testing
 
-There is no automated test harness for skills — they are instruction sets interpreted by Claude Code, not code with unit tests. The validation steps are:
+There is a shell-based test suite in `tests/` that invokes Claude Code headlessly (`claude -p`) and asserts patterns against its responses. If a skill edit removes a critical instruction or introduces a contradiction, the assertion fails. See [tests/README.md](tests/README.md) for full details.
+
+```bash
+./tests/run-tests.sh            # run all tests (~4-5 minutes, burns modest tokens)
+./tests/run-tests.sh --verbose  # show per-assertion output
+```
+
+After running the automated suite, do the following manual checks:
 
 1. **Load the plugin**: `claude --plugin-dir .` — confirm no startup errors.
 2. **Run the skill manually**: invoke `/discover-workflows` or `/install-workflow` and walk through the flow.
