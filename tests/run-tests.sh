@@ -47,16 +47,20 @@ Options:
   --help, -h           Show this help
 
 Tests:
-  test-discover-workflows.sh  Verify discover skill's key behaviors
-  test-install-workflow.sh    Verify install skill's auth + hard rules
-  test-install-agent-team.sh  Verify unified agent-team installer + one-label dispatch
+  test-invariants.sh          Tier-2: fast grep/file invariants tied to past bugs
+  test-discover-workflows.sh  Tier-1: skill-description assertions
+  test-install-workflow.sh    Tier-1: skill-description assertions (auth + hard rules)
+  test-install-agent-team.sh  Tier-1: skill-description assertions (unified installer)
 EOF
             exit 0 ;;
         *) echo "Unknown option: $1"; exit 1 ;;
     esac
 done
 
+# Invariants first — tier-2, runs in <1s, no Claude invocation.
+# Tier-1 skill tests follow (slow + costs tokens).
 tests=(
+    "test-invariants.sh"
     "test-discover-workflows.sh"
     "test-install-workflow.sh"
     "test-install-agent-team.sh"

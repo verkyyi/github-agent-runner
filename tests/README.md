@@ -36,11 +36,14 @@ Each run burns modest tokens against your Claude account.
 
 ## What's covered
 
-| Test file | Verifies |
-|---|---|
-| `test-discover-workflows.sh` | Skill loads; mentions `githubnext/agentics`; runtime fetch (no static catalog); fail-stop on upstream error |
-| `test-install-workflow.sh`   | Skill loads; mentions `gh aw add` + `gh secret set`; documents both auth paths; understands the `--exclude-env` carve-out; hard rules (never writes YAML by hand, never stores tokens) |
-| `test-install-agent-team.sh` | Skill loads; pitches the four roles (spec/plan/impl/review); one-label dispatch via `agent-team`; atomic install (all-or-nothing); auth wired once; OAuth tweak applied to every lockfile; creates the `state:*` label set; inherits the no-hand-written-YAML / no-token-echo hard rules |
+| Tier | Test file | Verifies | Speed |
+|---|---|---|---|
+| 2 | `test-invariants.sh` | Grep / filesystem invariants tied to specific past bugs: forbidden stale phrases, required remediation text, file-existence consistency, version alignment. Each invariant carries a commit-sha comment explaining why it exists. No Claude invocation. | <1s |
+| 1 | `test-discover-workflows.sh` | Skill loads; mentions `githubnext/agentics`; runtime fetch (no static catalog); fail-stop on upstream error | ~1min |
+| 1 | `test-install-workflow.sh`   | Skill loads; mentions `gh aw add` + `gh secret set`; documents both auth paths; understands the `--exclude-env` carve-out; hard rules (never writes YAML by hand, never stores tokens) | ~2min |
+| 1 | `test-install-agent-team.sh` | Skill loads; pitches the four roles (spec/plan/impl/review); one-label dispatch via `agent-team`; atomic install (all-or-nothing); auth wired once; OAuth tweak applied to every lockfile; creates the `state:*` label set; inherits the no-hand-written-YAML / no-token-echo hard rules | ~2min |
+
+**Tier-2 philosophy**: add invariants only when a bug is caught in review, not preemptively. Each assertion should be linkable to a specific past commit or regression — otherwise it's maintenance drag without evidence of value. Tier-3 (end-to-end dogfood on the playground repo) remains the truth source for emergent behavior; tier-2 prevents regression of known-fixed bugs.
 
 ## What's NOT covered (deferred)
 
