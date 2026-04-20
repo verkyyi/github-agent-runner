@@ -13,8 +13,10 @@
 #      the "Claude's prose doesn't happen to mention the skill name" flake.
 
 # Path to the most recent run_claude invocation's JSONL transcript.
-# Populated after every run_claude call. Consumed by assert_skill_used.
-LAST_TRANSCRIPT=""
+# Fixed at source-time so subshell run_claude calls (via `$(run_claude ...)`)
+# and parent-shell assert_skill_used calls both see the same file.
+# $$ is the PID of the test-file's bash — stable across subshells.
+LAST_TRANSCRIPT="${LAST_TRANSCRIPT:-/tmp/claude-transcript-$$.jsonl}"
 
 # Run Claude Code with a prompt. Returns the text response to stdout, and
 # leaves the full stream-json transcript at $LAST_TRANSCRIPT for structural
@@ -27,9 +29,9 @@ run_claude() {
     local prompt="$1"
     local timeout="${2:-60}"
     local allowed_tools="${3:-}"
-    local transcript
-    transcript=$(mktemp -t claude-transcript-XXXXXX.jsonl)
-    LAST_TRANSCRIPT="$transcript"
+    # Use the fixed path from source-time — see LAST_TRANSCRIPT comment above.
+    local transcript="$LAST_TRANSCRIPT"
+    : > "$transcript"  # truncate any previous run's output
 
     # --output-format stream-json gives us a line-per-event NDJSON transcript,
     # which we keep for assert_skill_used. --verbose is required by the CLI
