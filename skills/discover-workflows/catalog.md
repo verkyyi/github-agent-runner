@@ -1,7 +1,7 @@
 # Curated workflow catalog
 
 7 hand-picked entries from [`githubnext/agentics`](https://github.com/githubnext/agentics/tree/main/workflows).
-All require Claude auth — see `../install/auth.md` for the OAuth vs API-key decision.
+All require Claude auth — see `../install-workflow/auth.md` for the OAuth vs API-key decision.
 
 ---
 
