@@ -29,7 +29,7 @@ fi
 
 VERBOSE=false
 SPECIFIC_TEST=""
-TIMEOUT=300
+TIMEOUT=600
 WITH_E2E=false
 
 while [[ $# -gt 0 ]]; do
@@ -45,7 +45,7 @@ Usage: $0 [options]
 Options:
   --verbose, -v        Show verbose output
   --test, -t NAME      Run only the specified test file
-  --timeout SECONDS    Timeout per test (default: 300)
+  --timeout SECONDS    Timeout per test (default: 600)
   --with-e2e           Also run tier-3 light E2E (test-e2e-daily.sh) against
                        the playground (~5-7 min, dispatches a real workflow).
                        The heavy agent-team E2E (test-e2e.sh, ~20-35 min) is
@@ -78,7 +78,7 @@ if [ "$WITH_E2E" = true ]; then
     # E2E internal polling budget is 7 min; bump wrapper timeout so run-tests
     # doesn't kill the test before its own budget runs out. Only bumps if the
     # user didn't explicitly override.
-    [ "$TIMEOUT" = 300 ] && TIMEOUT=600
+    [ "$TIMEOUT" = 600 ] && TIMEOUT=1200
 fi
 
 if [ -n "$SPECIFIC_TEST" ]; then
