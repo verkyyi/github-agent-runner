@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Test: discover-workflows skill
-# Verifies that the skill loads and that Claude describes its key behavior
-# (recommends from upstream catalog, fetches at runtime, fails loudly).
+# Directive questions — each prompt tells Claude to load SKILL.md via the Skill
+# tool and quote a specific fact, rather than describe the skill from its
+# short frontmatter blurb. Deterministic assertions, not LLM-phrasing lottery.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -10,30 +11,26 @@ source "$SCRIPT_DIR/test-helpers.sh"
 echo "=== Test: discover-workflows skill ==="
 echo ""
 
-# Test 1: Skill loading + purpose + scope.
-# Patterns are widened for LLM phrasing variance — we check the skill is
-# recognized, mentions some form of upstream source, and frames itself
-# as making recommendations (not e.g. listing all workflows).
-echo "Test 1: Skill loading and purpose..."
-output=$(run_claude "What is the discover-workflows skill? Describe its job briefly." 180)
+# Test 1: Purpose + upstream source (one Skill-tool load covers both).
+echo "Test 1: Skill loads and documents its upstream source..."
+output=$(run_claude "Use the Skill tool to load the github-agent-runner plugin's discover-workflows skill, then answer: (1) in one sentence what is its purpose? and (2) what upstream repository does it fetch its workflow list from at runtime? Quote the upstream repo path exactly as it appears in SKILL.md." 180)
 assert_contains "$output" "discover-workflows|Discover Workflows" "Skill is recognized" || exit 1
 assert_contains "$output" "agentics|gh-aw|upstream|catalog" "Mentions source (agentics / gh-aw / catalog)" || exit 1
 assert_contains "$output" "recommend|suggest|shortlist|tailor|fit|pick" "Frames itself as recommendation, not listing" || exit 1
 
 echo ""
 
-# Test 2: Runtime fetch (the key product decision — no static catalog).
-# Asked directly to force Claude to describe the source mechanism.
-echo "Test 2: Runtime source..."
-output=$(run_claude "Where does the discover-workflows skill get its workflow list from? Is it stored in a local file or fetched from somewhere at runtime?" 180)
+# Test 2: Runtime fetch (no static catalog).
+echo "Test 2: Runtime source fetch, not a local static catalog..."
+output=$(run_claude "Load the discover-workflows skill via the Skill tool. Does it ship a local catalog of workflows, or fetch them from a remote source at runtime? Name the upstream repo and quote the specific phrase from SKILL.md that confirms this (wording about fetching at runtime or no local catalog to drift)." 180)
 assert_contains "$output" "agentics|gh-aw|githubnext" "Names upstream source" || exit 1
 assert_contains "$output" "fetch|runtime|live|remote|network|on demand|API" "Describes dynamic retrieval" || exit 1
 
 echo ""
 
-# Test 3: Failure behavior — no fallback to stale data.
-echo "Test 3: Failure behavior when upstream unreachable..."
-output=$(run_claude "If the upstream source (githubnext/agentics) is unreachable at runtime, what should the discover-workflows skill do?" 180)
+# Test 3: Fail-stop on upstream unreachable.
+echo "Test 3: Fail-stop when upstream catalog is unreachable..."
+output=$(run_claude "Per the discover-workflows skill's SKILL.md, if the upstream source (githubnext/agentics) is unreachable at runtime, what does the skill do? Quote the specific instruction about failure handling verbatim." 180)
 assert_contains "$output" "stop|error|fail|surface|report|abort" "Surfaces the failure" || exit 1
 
 echo ""
