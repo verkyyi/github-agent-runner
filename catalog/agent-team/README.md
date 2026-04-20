@@ -34,8 +34,8 @@ Spec-agent distinguishes a fresh dispatch (no `state:*` label on the issue, no p
 
 Exactly one `state:*` label is expected at a time. Each agent:
 
-1. Is triggered by `issues.labeled` (or `pull_request.labeled` for the reviewer).
-2. Early-exits if the triggering label doesn't match its state, or if the issue lacks `agent-team`.
+1. Declares a `names:` filter in its `on:` trigger. gh-aw compiles this into a job-level `if:` in the generated `.lock.yml` — the **runner is skipped before startup** when a non-matching label fires. Zero runner cost, zero agent tokens.
+2. Early-exits at the agent level (belt-and-suspenders) for cases the runner filter cannot catch: spec-agent detecting label churn (the pipeline is already in motion when `agent-team` is re-added), and verifying the issue still carries `agent-team`.
 3. Removes its input state label immediately (so re-adding the label is the retry mechanism).
 4. Does its work and writes a structured comment.
 5. Adds the next state label — or `state:blocked` on max iterations / hard failure.
@@ -104,5 +104,6 @@ Then apply the OAuth token tweak to each `.lock.yml` per [`skills/install-workfl
 - **Concurrency**: each workflow uses `concurrency: group: agent-team-issue-${issue_number}` to prevent two roles racing on the same issue.
 - **Max iterations**: default 3 (reviewer kickback → implementer). Tune `MAX_ITERATIONS` in each workflow's prompt.
 - **Non-UI only**: no screenshot capture. Reviewer validates via tests/CI status + reading the diff.
-- **Cost**: a single task can easily spend 4× the tokens of a monolithic workflow. Set `timeout-minutes` conservatively and monitor the first few runs.
+- **Trigger cost**: label events that don't match an agent's `names:` filter are dropped at the runner level (compiled to a job-level `if:` by gh-aw) — no runner starts, no tokens consumed. Every label event that fires in your repo costs nothing unless it matches the exact label an agent is waiting for.
+- **Active-task cost**: a single task can easily spend 4× the tokens of a monolithic workflow. Set `timeout-minutes` conservatively and monitor the first few runs.
 - **No auto-merge**: the reviewer approves but never merges. Humans merge.
