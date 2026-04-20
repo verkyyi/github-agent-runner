@@ -113,6 +113,13 @@ skills/
     SKILL.md                       # /install-workflow logic and hard rules
     auth.md                        # OAuth vs. API-key decision tree
 
+tests/
+  run-tests.sh                     # test runner (--verbose, --test, --timeout flags)
+  test-helpers.sh                  # run_claude / assert_contains / assert_order helpers
+  test-discover-workflows.sh       # /discover-workflows tests (3 tests, 6 assertions)
+  test-install-workflow.sh         # /install-workflow tests (5 tests, 9 assertions)
+  README.md                        # how to run and extend the test suite
+
 .github/
   agents/
     agentic-workflows.agent.md     # dispatcher agent for workflow operations

@@ -74,7 +74,22 @@ Edit the relevant `SKILL.md` or data file. Test by running the skill locally wit
 
 ## Testing
 
-There is no automated test harness for skills — they are instruction sets interpreted by Claude Code, not code with unit tests. The validation steps are:
+The test suite lives in `tests/` and follows the [superpowers](https://github.com/obra/superpowers/tree/main/tests/claude-code) plugin pattern. Each test invokes Claude Code headlessly (`claude -p`) with a question about a skill and asserts patterns against the response. If a future edit removes a critical instruction or introduces a contradiction, Claude's description of the skill will drift and the assertion fails — treat a failing test like a failing build.
+
+**Requirements**: Claude Code CLI on `PATH` with valid auth (ambient OAuth or `ANTHROPIC_API_KEY`). The runner passes `--plugin-dir <repo-root>` automatically — no marketplace install needed.
+
+**Running the tests:**
+
+```bash
+./tests/run-tests.sh                         # run all tests (~4–5 minutes)
+./tests/run-tests.sh --verbose               # show per-assertion output
+./tests/run-tests.sh --test test-install-workflow.sh   # one file only
+./tests/run-tests.sh --timeout 600          # per-test timeout in seconds
+```
+
+**Adding a test:** see [tests/README.md](tests/README.md).
+
+**Manual validation** (always do this locally before opening a PR, in addition to the automated tests):
 
 1. **Load the plugin**: `claude --plugin-dir .` — confirm no startup errors.
 2. **Run the skill manually**: invoke `/discover-workflows` or `/install-workflow` and walk through the flow.
