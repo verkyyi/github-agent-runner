@@ -1,6 +1,6 @@
 # Auth decision tree
 
-How sidekick picks and applies auth for a gh-aw workflow with `engine: claude`. Validated end-to-end 2026-04-19 against `verkyyi/github-agent-runner` and `verkyyi/agentfolio`.
+How the install-workflow skill picks and applies auth for a gh-aw workflow with `engine: claude`. Validated end-to-end 2026-04-19 against `verkyyi/github-agent-runner` and `verkyyi/agentfolio`.
 
 ## Decide the path
 
@@ -24,7 +24,7 @@ The user runs, in a real TTY:
 claude setup-token
 ```
 
-Opens browser auth flow, prints a token starting with `sk-ant-oat01-...`. Sidekick never sees the token.
+Opens browser auth flow, prints a token starting with `sk-ant-oat01-...`. The plugin never sees the token.
 
 ### Step 2 — set the repo secret
 
@@ -32,7 +32,7 @@ Opens browser auth flow, prints a token starting with `sk-ant-oat01-...`. Sideki
 gh secret set CLAUDE_CODE_OAUTH_TOKEN --repo <owner>/<repo>
 ```
 
-User pastes the token when prompted (stdin, no echo). Sidekick confirms via `gh secret list` — the secret name should appear, but the value must stay unseen.
+User pastes the token when prompted (stdin, no echo). Confirm via `gh secret list` — the secret name should appear, but the value must stay unseen.
 
 ### Step 3 — apply the post-compile tweak to every `.lock.yml`
 
@@ -69,7 +69,7 @@ If `ANTHROPIC_API_KEY` count is 0, you over-tweaked → the CLI will fail to aut
 
 ### Step 5 — know the fragility
 
-**`gh aw compile` regenerates `.lock.yml` from the `.md` source, reverting the tweak.** Other commands that trigger recompilation: `gh aw upgrade`, `gh aw fix`, and any workflow-source edit. Sidekick must re-apply Steps 3–4 after any recompile event.
+**`gh aw compile` regenerates `.lock.yml` from the `.md` source, reverting the tweak.** Other commands that trigger recompilation: `gh aw upgrade`, `gh aw fix`, and any workflow-source edit. Re-apply Steps 3–4 after any recompile event.
 
 `gh aw validate` does NOT regenerate `.lock.yml` — safe to run anytime.
 
