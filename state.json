@@ -1,8 +1,9 @@
 {
-  "last_run": "2026-04-19",
-  "last_run_id": "24636492652",
+  "last_run": "2026-04-20",
+  "last_run_id": "24643990317",
   "comments_made": {
-    "6": "2026-04-19"
+    "6": "2026-04-19",
+    "16": "2026-04-20"
   },
   "issue_cursor": 2,
   "fix_attempts": {
@@ -10,6 +11,10 @@
       "issue": 10,
       "status": "blocked",
       "description": "Pin actions/checkout to SHA in copilot-setup-steps.yml + add .github/dependabot.yml — push rejected (protected workflow files). Manual apply instructions in issue #10."
+    },
+    "fix-install-step-ref-2026-04-20": {
+      "status": "pr_created",
+      "description": "Fix typo 'Steps 5' → 'Step 5' in skills/install/SKILL.md hard rules. Draft PR created 2026-04-20, run 24643990317."
     }
   },
   "monthly_activity_issue": {
@@ -17,5 +22,5 @@
     "month": "2026-04",
     "created": "2026-04-19"
   },
-  "notes": "Issue #2 ([aw] No-Op Runs) - auto-managed, no action. Issue #10 is the failed eng PR (blocked by protected files, instructions there for manual apply). PRs #14 and #15 are open draft docs PRs from update-docs bot. PR #6 (docs: document infra workflows + vscode tooling) was rebased onto origin/main on 2026-04-19 run #24636492652 — conflict resolved by keeping weekly-research, agentics-maintenance.yml, and copilot-setup-steps.yml all three layout lines; branch pushed via push_to_pull_request_branch, comment added to PR #6. Monthly Activity issue is #11."
+  "notes": "Issue #2 ([aw] No-Op Runs) - auto-managed, no action. Issue #10 is the failed eng PR (blocked by protected files, instructions there for manual apply). Issue #16 ([aw] Repo Assist failed) - commented 2026-04-20 explaining the push failure was due to PR #6 not having [Repo Assist] prefix. PR #6 is superseded — push cannot be done by Repo Assist. PRs #18 and #19 are fresh draft docs PRs covering the same gap as #6; maintainer should pick one and close #6. Typo fix PR created this run (branch repo-assist/fix-install-step-ref-2026-04-20) — fixes 'Steps 5' → 'Step 5' in install/SKILL.md. Monthly Activity issue is #11."
 }
