@@ -99,7 +99,7 @@ This repo dogfoods three workflows on itself, chosen as genuinely useful for a s
 | Workflow | Trigger | Purpose |
 |---|---|---|
 | [daily-repo-status](.github/workflows/daily-repo-status.md) | Daily | Opens a `[repo-status]` issue summarizing recent activity — the recommended first-run starter |
-| [update-docs](.github/workflows/update-docs.md) | Every push to `main` | Detects documentation drift and opens draft PRs to keep docs in sync with code changes |
+| [update-docs](.github/workflows/update-docs.md) | Daily + manual | Detects documentation drift and opens draft PRs to keep docs in sync with code changes |
 | [weekly-research](.github/workflows/weekly-research.md) | Weekly (Monday) | Strategic research across Anthropic policy, plugin ecosystem, gh-aw upstream, competitors, and solo-founder hiring signal |
 
 All three use `engine: claude` and are pre-configured with the [OAuth token tweak](skills/install-workflow/auth.md). The agent-team pattern under [catalog/agent-team/](catalog/agent-team/README.md) is *not* installed here — it lives in a separate playground repo, since running it here would aim the implementer agent at this repo's own code.

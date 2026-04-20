@@ -18,13 +18,15 @@ Never guess. Ask if ambiguous.
 
 ### Step 1 — generate the subscription OAuth token
 
-The user runs, in a real TTY:
+The user runs, in a real TTY **on a machine with a browser available**:
 
 ```
 claude setup-token
 ```
 
 Opens browser auth flow, prints a token starting with `sk-ant-oat01-...`. The skill never sees the token.
+
+**Do NOT run this inside**: headless containers / dev-containers without port forwarding, SSH sessions without browser forwarding, CI runners, or the Claude Code REPL itself — the command will silently hang waiting for a browser callback that never arrives. When in doubt, run it on the user's local laptop and paste the token into `gh secret set` in Step 2 (which can run anywhere, since stdin-piped secret values don't need a browser).
 
 ### Step 2 — set the repo secret
 

@@ -31,6 +31,7 @@ One paragraph: four workflows will be added, one auth secret will be set, seven 
 Check in parallel:
 
 - `gh` CLI authenticated (`gh auth status`)
+- **`workflow` scope present on the `gh` token** (`gh auth status -t 2>&1 | grep -i 'token scopes'`). Without it, the user's first `git push` of `.github/workflows/*.lock.yml` will fail with *"refusing to allow an OAuth App to create or update workflow ... without `workflow` scope"*. If missing, have the user run `gh auth refresh -s workflow -h github.com` (browser flow, ~30 sec) before continuing.
 - `gh aw` extension installed (`gh extension list | grep gh-aw`)
 - Current dir is a git repo clean enough to commit (`git status --porcelain`)
 - User has write access to `origin` (`gh repo view --json viewerPermission`)

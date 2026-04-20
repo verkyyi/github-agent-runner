@@ -98,8 +98,8 @@ If a workflow `.md` source needs changing:
 
 1. Fork the repo and create a branch: `git checkout -b <type>/<short-description>`
 2. Make changes and test locally.
-3. Open a draft PR against `main`. Draft PRs trigger the `pr-nitpick-reviewer` workflow on `/nit` — use it for style feedback before marking ready.
-4. The `update-docs` workflow runs on every push to `main` and will open a follow-up PR if your change creates a documentation gap.
+3. Open a draft PR against `main`.
+4. The `update-docs` workflow runs on a daily schedule (and is manually dispatchable via `gh workflow run update-docs.lock.yml`); it opens a follow-up PR when your change creates a documentation gap.
 
 Branch naming conventions:
 
