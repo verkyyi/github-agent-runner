@@ -2,12 +2,21 @@
 
 A Claude Code plugin for conversational discovery and installation of GitHub agentic workflows (gh-aw), with subscription-aware auth setup.
 
-> **Status**: v0.2.0 — agent-team pattern validated end-to-end on the [playground dogfood](https://github.com/verkyyi/agent-team-playground/pull/5).
+> **Status**: v0.2.1 — polish release on top of v0.2.0's validated [agent-team pipeline](https://github.com/verkyyi/agent-team-playground/pull/5). End-user journey fixes, ~4-min speedup on installed workflows, and a test framework underneath.
 
-## What's new in v0.2.0
+## What's new in v0.2.1
 
-- **`agent-team` pattern** — four workflows (spec → plan → impl → review) that collaborate on a single issue via `workflow_dispatch` handoffs. Dispatch one label, get a reviewed draft PR. See [catalog/agent-team/](catalog/agent-team/README.md).
-- **`/install-agent-team` skill** — one command installs all four roles, applies the OAuth tweak to every lockfile, and creates the label set. See [skills/install-agent-team/SKILL.md](skills/install-agent-team/SKILL.md).
+- **Critical end-user journey fixes** — `workflow`-scope preflight in both install skills (caught a real first-time-user gotcha), TTY warning for `claude setup-token` in headless environments, stale "every push to main" docs cleaned up.
+- **Agent-team pipelines ~4 min faster** — `safe-outputs.threat-detection: false` on all four agent-team workflows skips gh-aw's per-agent threat classifier (appropriate for trusted-input pipelines where the user labels their own issue).
+- **Reviewer posts a pipeline-summary comment** on the issue after approve, with links to all four run pages + the PR. One jump-off point for the human.
+- **Implementer prompt tuning** — trust-the-plan directive + 5-tool-call budget heuristic. Observed wall-clock: 20m54s → 6m41s on a comparable task (−68%).
+- **MIT LICENSE file** added (was already declared in plugin.json).
+- **Credits section** explicitly attributes gh-aw (GitHub Next), agentics (same team), and superpowers (Jesse Vincent) in README.
+
+## What's in v0.2.0 (still)
+
+- **`agent-team` pattern** — four workflows (spec → plan → impl → review) that collaborate on a single issue via `workflow_dispatch` handoffs. See [catalog/agent-team/](catalog/agent-team/README.md).
+- **`/install-agent-team` skill** — atomic install of all four roles + OAuth tweak + seven labels. See [skills/install-agent-team/SKILL.md](skills/install-agent-team/SKILL.md).
 
 ## What is this?
 
