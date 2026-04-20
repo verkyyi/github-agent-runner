@@ -100,14 +100,21 @@ Then apply the OAuth token tweak to each `.lock.yml` per [`skills/install-workfl
 1. Open an issue describing what you want built.
 2. Add the single label `agent-team`.
 3. Watch the thread. Each role posts its contribution as a comment; the implementer opens a draft PR that closes the issue when merged.
-4. Human override at any time: add `state:blocked` to halt, edit a comment to steer the next agent, or manually `gh workflow run` a specific role to retry a stuck stage.
-5. **Retrying a blocked task**: clear `state:blocked`, then re-add `agent-team`. Spec-agent treats it as a fresh dispatch (because the state:* labels are gone and the spec markers are already satisfied — actually: to redo from scratch, also delete the prior spec comment).
+4. On **approval**, the reviewer posts two comments: a verdict comment on the PR, then a pipeline-summary comment on the **issue** listing each stage's Actions run link and the PR number — giving you a single jump-off point without digging through the Actions tab.
+5. Human override at any time: add `state:blocked` to halt, edit a comment to steer the next agent, or manually `gh workflow run` a specific role to retry a stuck stage.
+6. **Retrying a blocked task**: clear `state:blocked`, then re-add `agent-team`. Spec-agent treats it as a fresh dispatch (because the state:* labels are gone and the spec markers are already satisfied — actually: to redo from scratch, also delete the prior spec comment).
+
+## Agent behaviors tuned from dogfood
+
+- **Spec depth scales to task size**: trivial fixes (~10-line diff) get a 5–10 line spec; regular tasks get 200–400 words. Smaller specs reduce context read by every downstream agent.
+- **Implementer trusts the plan**: the implementer reads only the files named in the plan, runs tests once at the end, and does not re-explore the codebase. A 5-tool-call budget check fires as a heuristic — if reached, the plan is surfaced as likely wrong rather than continuing to explore.
+- **Timeouts are tight to fail-fast on stuck agents**: spec 10 min, planner 10 min, implementer 15 min, reviewer 12 min. Based on measured wall-clock times (spec ~3m, planner ~5m, implementer ~20m at worst, reviewer ~8m) from the first end-to-end dogfood run.
 
 ## Limits and gotchas
 
 - **Concurrency**: each workflow uses `concurrency: group: agent-team-issue-${issue_number}` so only one role runs at a time per issue.
 - **Max iterations**: default 3 (reviewer kickback → implementer). The counter lives on the `iteration` input passed through the dispatch chain, bumped exclusively by the reviewer on kickback.
 - **Non-UI only**: no screenshot capture. Reviewer validates via tests/CI status + reading the diff.
-- **Cost**: a single task can easily spend 4× the tokens of a monolithic workflow. Set `timeout-minutes` conservatively and monitor the first few runs.
+- **Cost**: a single task can easily spend 4× the tokens of a monolithic workflow. The first dogfood run on a one-char fix took 37 min total. Monitor the first few runs.
 - **No auto-merge**: the reviewer approves but never merges. Humans merge.
 - **Dispatch visibility**: each `dispatch-workflow` call shows up as a new run in the Actions tab, linked to the upstream run. Makes the chain visible.
