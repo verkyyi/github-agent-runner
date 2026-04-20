@@ -44,9 +44,14 @@ jobs:
       - name: Install Claude Code CLI
         run: npm install -g @anthropic-ai/claude-code
 
-      - name: Tier-1 skill-description tests (~5 min, uses Claude OAuth subscription)
+      - name: Tier-1 skill-description tests (uses Claude OAuth subscription)
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # Force Haiku in CI: tier-1 asks "describe this skill"-class questions
+          # that don't need Sonnet/Opus reasoning. Haiku's ~3-5x higher throughput
+          # collapses CI wall-clock from ~12min to ~2-3min. Local runs keep the
+          # default (no env var set).
+          CLAUDE_MODEL: claude-haiku-4-5-20251001
         run: |
           set -e
           for t in test-discover-workflows.sh test-install-workflow.sh test-install-agent-team.sh; do

@@ -24,6 +24,13 @@ run_claude() {
     if [ -n "$allowed_tools" ]; then
         cmd="$cmd --allowed-tools=$allowed_tools"
     fi
+    # Let CI (or the user) force a specific model. Default: whatever the CLI
+    # picks. Tier-1 tests ask simple description questions — Haiku is fast
+    # enough and matches Sonnet/Opus output for this scope. Setting CLAUDE_MODEL
+    # on a CI job cuts wall-clock ~3-5x versus the default.
+    if [ -n "${CLAUDE_MODEL:-}" ]; then
+        cmd="$cmd --model \"$CLAUDE_MODEL\""
+    fi
 
     if timeout "$timeout" bash -c "$cmd" > "$output_file" 2>&1; then
         cat "$output_file"
