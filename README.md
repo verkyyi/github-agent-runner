@@ -8,7 +8,7 @@ A Claude Code plugin for conversational discovery and installation of GitHub age
 
 `github-agent-runner` is a Claude Code plugin that helps you add AI-powered automation to any GitHub repository. It does two things:
 
-1. **Discover** — recommends 1–3 agentic workflows from a curated catalog that match your repo's shape (language, CI setup, activity level, etc.).
+1. **Discover** — recommends 1–3 agentic workflows from the upstream [`githubnext/agentics`](https://github.com/githubnext/agentics/tree/main/workflows) catalog, fetched live at runtime, that match your repo's shape (language, CI setup, activity level, etc.).
 2. **Install** — walks you through fetching, authenticating, and wiring up each workflow end-to-end, including the OAuth token tweak that makes your Claude subscription work inside GitHub Actions.
 
 This repo also **dogfoods seven of those workflows on itself**, so you can see exactly how they're configured.

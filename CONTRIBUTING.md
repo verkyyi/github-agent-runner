@@ -1,6 +1,6 @@
 # Contributing to github-agent-runner
 
-Thanks for improving this plugin. This guide covers everything needed to add catalog entries, extend skills, or contribute fixes.
+Thanks for improving this plugin. This guide covers everything needed to improve discovery matching, extend skills, or contribute fixes.
 
 ## Prerequisites
 
