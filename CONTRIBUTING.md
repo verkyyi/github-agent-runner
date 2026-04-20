@@ -29,6 +29,8 @@ skills/
   install-workflow/
     SKILL.md                    ← defines /install-workflow
     auth.md                     ← data loaded by the skill at runtime
+  install-agent-team/
+    SKILL.md                    ← defines /install-agent-team (added in v0.2.0)
 ```
 
 **Skill loading**: Claude Code reads each `SKILL.md` file's YAML frontmatter to register the skill. Because the skill names (`discover-workflows`, `install-workflow`) are unique across installed plugins, users invoke them with the short form (`/discover-workflows`). Prefix with the plugin name (`/github-agent-runner:discover-workflows`) only on collision. The `description` field in the frontmatter determines when Claude invokes the skill automatically based on user intent. The body of `SKILL.md` is the full instruction set for that skill.
@@ -74,7 +76,17 @@ Edit the relevant `SKILL.md` or data file. Test by running the skill locally wit
 
 ## Testing
 
-There is no automated test harness for skills — they are instruction sets interpreted by Claude Code, not code with unit tests. The validation steps are:
+Run the fast test suite before opening a PR:
+
+```bash
+./tests/run-tests.sh                    # run all tests (~4-5 min)
+./tests/run-tests.sh --verbose          # show per-assertion output
+./tests/run-tests.sh --test test-install-workflow.sh  # single test file
+```
+
+Tests invoke Claude Code headlessly (`claude -p`) against the skill files and assert patterns in the responses. They catch instruction drift — if a critical rule is removed or contradicted, Claude's description of the skill will change and the assertion fails. See [tests/README.md](tests/README.md) for full details on requirements, coverage, and how to add new tests.
+
+For changes that don't affect skill instruction text, the manual validation steps are:
 
 1. **Load the plugin**: `claude --plugin-dir .` — confirm no startup errors.
 2. **Run the skill manually**: invoke `/discover-workflows` or `/install-workflow` and walk through the flow.

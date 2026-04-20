@@ -163,7 +163,7 @@ Changes to `skills/*/SKILL.md` take effect on the next Claude Code session reloa
 
 ## Publishing
 
-Once v0.1 is scope-locked, submit via `claude.ai/settings/plugins/submit` or `platform.claude.com/plugins/submit`.
+Submit via `claude.ai/settings/plugins/submit` or `platform.claude.com/plugins/submit`.
 
 ## Credits
 
