@@ -11,57 +11,25 @@ A Claude Code plugin for conversational discovery and installation of GitHub age
 1. **Discover** — recommends 1–3 agentic workflows from a curated catalog that match your repo's shape (language, CI setup, activity level, etc.).
 2. **Install** — walks you through fetching, authenticating, and wiring up each workflow end-to-end, including the OAuth token tweak that makes your Claude subscription work inside GitHub Actions.
 
-This repo also **dogfoods seven of those workflows on itself**, so you can see exactly how they're configured.
-
-## Installed workflows
-
-| Workflow | Trigger | Purpose |
-|---|---|---|
-| [repo-assist](.github/workflows/repo-assist.md) | Every 12 h + `/repo-assist` + 👀 reaction | Labels issues, comments to unblock contributors, opens draft PRs for bug fixes and improvements |
-| [daily-plan](.github/workflows/daily-plan.md) | Daily | Analyzes repo state and maintains a rolling project-plan Discussion |
-| [update-docs](.github/workflows/update-docs.md) | Every push to `main` | Detects documentation drift and opens draft PRs to keep docs in sync with code changes |
-| [q](.github/workflows/q.md) | `/q` or 🚀 reaction | Expert workflow optimizer — audits live logs, identifies inefficiencies, opens optimization PRs |
-| [markdown-linter](.github/workflows/markdown-linter.md) | Weekdays at 14:00 UTC | Runs Super Linter on Markdown; opens time-limited issues for violations |
-| [pr-nitpick-reviewer](.github/workflows/pr-nitpick-reviewer.md) | `/nit` on a PR | Inline style and best-practice review (up to 10 comments, non-blocking) |
-| [weekly-research](.github/workflows/weekly-research.md) | Weekly (Monday) | Strategic research across Anthropic policy, plugin ecosystem, gh-aw upstream, competitors, and solo-founder hiring signal |
-
-All seven use `engine: claude` and are pre-configured with the [OAuth token tweak](skills/install-workflow/auth.md) so they run on your Claude subscription rather than billing the API per-token.
-
-## Prerequisites
-
-To use the plugin:
-
-- [Claude Code](https://claude.ai/code) CLI installed and authenticated
-- `gh` CLI authenticated (`gh auth login`)
-- `gh aw` extension installed (`gh extension install githubnext/gh-aw`)
-
-To run the installed workflows on your own fork:
-
-- A Claude Pro, Max ($100), or Max ($200) subscription **or** an [Anthropic API key](https://console.anthropic.com)
-- The appropriate secret set on the repository:
-  - OAuth path: `CLAUDE_CODE_OAUTH_TOKEN`
-  - API-key path: `ANTHROPIC_API_KEY`
-- GitHub Discussions enabled (required by `daily-plan` — uses the "announcements" category — and `weekly-research` — uses the "ideas" category)
-
-See [skills/install-workflow/auth.md](skills/install-workflow/auth.md) for the complete auth decision tree.
-
 ## Quick start
 
-Inside any Claude Code session, add the self-hosted marketplace and install the plugin:
+Open your repo in Claude Code (or any coding agent) and paste:
+
+> Install the github-agent-runner plugin from `https://raw.githubusercontent.com/verkyyi/github-agent-runner/main/.claude-plugin/marketplace.json` and recommend workflows for this repo.
+
+The agent will add the marketplace, install the plugin, and run `/discover-workflows` — pick a recommendation and it hands off to `/install-workflow` for the full auth + setup walkthrough.
+
+<details>
+<summary>Prefer the explicit slash-command form?</summary>
 
 ```
 /plugin marketplace add https://raw.githubusercontent.com/verkyyi/github-agent-runner/main/.claude-plugin/marketplace.json
 /plugin install github-agent-runner
+/discover-workflows
 ```
 
-Then invoke the skills:
-
-```
-/discover-workflows    # get tailored workflow recommendations for your repo
-/install-workflow      # install a recommended workflow with full auth setup
-```
-
-Both skill names are unique, so the short form works out-of-the-box. If another installed plugin ever ships the same skill name, prefix with the plugin name to disambiguate: `/github-agent-runner:discover-workflows`.
+Both skill names are unique, so the short form works out-of-the-box. If another installed plugin ever ships the same skill name, prefix with the plugin name: `/github-agent-runner:discover-workflows`.
+</details>
 
 > Want to hack on the plugin itself? See [Local development](#local-development) below for the `claude --plugin-dir .` workflow.
 
@@ -84,6 +52,24 @@ Takes a workflow name (or prompts you to run `/discover-workflows` first) and:
 5. For the OAuth path: applies the required two-pass post-compile tweak and verifies the grep counts
 6. Runs `gh aw validate` and summarizes every file changed
 
+## Prerequisites
+
+To use the plugin:
+
+- [Claude Code](https://claude.ai/code) CLI installed and authenticated
+- `gh` CLI authenticated (`gh auth login`)
+- `gh aw` extension installed (`gh extension install githubnext/gh-aw`)
+
+To run the installed workflows on your own repo:
+
+- A Claude Pro, Max ($100), or Max ($200) subscription **or** an [Anthropic API key](https://console.anthropic.com)
+- The appropriate secret set on the repository:
+  - OAuth path: `CLAUDE_CODE_OAUTH_TOKEN`
+  - API-key path: `ANTHROPIC_API_KEY`
+- GitHub Discussions enabled if you install `daily-plan` (uses the "announcements" category) or `weekly-research` (uses the "ideas" category)
+
+See [skills/install-workflow/auth.md](skills/install-workflow/auth.md) for the complete auth decision tree.
+
 ## Authentication
 
 Two paths are supported:
@@ -98,6 +84,22 @@ Two paths are supported:
 Full details — including the two-pass tweak rationale, verification grep counts, failure modes, and the ToS boundary explanation — are in [skills/install-workflow/auth.md](skills/install-workflow/auth.md).
 
 **Important**: `gh aw compile` reverts the OAuth tweak in `.lock.yml` files. Re-apply [Steps 3–4 from auth.md](skills/install-workflow/auth.md#step-3--apply-the-post-compile-tweak-to-every-lockyml) after any recompile event (`gh aw compile`, `gh aw upgrade`, `gh aw fix`, or editing the `.md` source).
+
+## Running on this repo
+
+This repo dogfoods seven workflows on itself, so you can see exactly how they're wired up in practice:
+
+| Workflow | Trigger | Purpose |
+|---|---|---|
+| [repo-assist](.github/workflows/repo-assist.md) | Every 12 h + `/repo-assist` + 👀 reaction | Labels issues, comments to unblock contributors, opens draft PRs for bug fixes and improvements |
+| [daily-plan](.github/workflows/daily-plan.md) | Daily | Analyzes repo state and maintains a rolling project-plan Discussion |
+| [update-docs](.github/workflows/update-docs.md) | Every push to `main` | Detects documentation drift and opens draft PRs to keep docs in sync with code changes |
+| [q](.github/workflows/q.md) | `/q` or 🚀 reaction | Expert workflow optimizer — audits live logs, identifies inefficiencies, opens optimization PRs |
+| [markdown-linter](.github/workflows/markdown-linter.md) | Weekdays at 14:00 UTC | Runs Super Linter on Markdown; opens time-limited issues for violations |
+| [pr-nitpick-reviewer](.github/workflows/pr-nitpick-reviewer.md) | `/nit` on a PR | Inline style and best-practice review (up to 10 comments, non-blocking) |
+| [weekly-research](.github/workflows/weekly-research.md) | Weekly (Monday) | Strategic research across Anthropic policy, plugin ecosystem, gh-aw upstream, competitors, and solo-founder hiring signal |
+
+All seven use `engine: claude` and are pre-configured with the [OAuth token tweak](skills/install-workflow/auth.md).
 
 ## Repository layout
 
