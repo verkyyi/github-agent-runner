@@ -42,14 +42,32 @@ Each run burns modest tokens against your Claude account.
 | 1 | `test-discover-workflows.sh` | Skill loads; mentions `githubnext/agentics`; runtime fetch (no static catalog); fail-stop on upstream error | ~1min |
 | 1 | `test-install-workflow.sh`   | Skill loads; mentions `gh aw add` + `gh secret set`; documents both auth paths; understands the `--exclude-env` carve-out; hard rules (never writes YAML by hand, never stores tokens) | ~2min |
 | 1 | `test-install-agent-team.sh` | Skill loads; pitches the four roles (spec/plan/impl/review); one-label dispatch via `agent-team`; atomic install (all-or-nothing); auth wired once; OAuth tweak applied to every lockfile; creates the `state:*` label set; inherits the no-hand-written-YAML / no-token-echo hard rules | ~2min |
+| 3 | `test-e2e.sh` (opt-in) | Real pipeline run on `verkyyi/agent-team-playground`: opens a unique canned issue, labels `agent-team`, polls until terminal state, asserts PR exists with `Closes #N` + test-status section + reviewer verdict + pipeline-summary comment. Collects per-stage timings and compares to last run — yellow flag if any stage or total wall-clock exceeds 150% of baseline. **Not** run by default; opt in via `--tier3` (see below). | ~20-35min |
 
-**Tier-2 philosophy**: add invariants only when a bug is caught in review, not preemptively. Each assertion should be linkable to a specific past commit or regression — otherwise it's maintenance drag without evidence of value. Tier-3 (end-to-end dogfood on the playground repo) remains the truth source for emergent behavior; tier-2 prevents regression of known-fixed bugs.
+**Tier philosophy**:
+- **Tier 2** — add invariants only when a bug is caught in review, not preemptively. Each assertion should be linkable to a specific past commit.
+- **Tier 3** — truth source for emergent behavior (handoff breakage, timing drift, end-to-end correctness). Costs real wall-time and Claude tokens; run manually before releases or on a weekly cron.
+
+Exit codes from `test-e2e.sh`: `0` = green, `1` = red (hard failure — pipeline stalled, missing PR, missing verdict marker), `2` = yellow (regression vs. baseline or non-approve verdict, no hard failure).
+
+## Running tier-3
+
+```bash
+# Run once (manual, ~20-35 min):
+./tests/test-e2e.sh
+
+# Against a different playground:
+PLAYGROUND=<owner>/<repo> ./tests/test-e2e.sh
+
+# Tighten the yellow-band threshold (default: 150% of last run):
+YELLOW_MULTIPLIER=130 ./tests/test-e2e.sh
+```
+
+Each run appends to `tests/e2e-history.jsonl` (committed). The first run has no baseline — it establishes one. Every subsequent run flags yellows against the immediately prior entry.
 
 ## What's NOT covered (deferred)
 
-- **Integration tests** — real `gh aw add` against a fixture repo,
-  real secret setting, real workflow compile. Slow, flaky, high setup
-  cost. Not worth it until distribution picks up.
+- **Per-run provisioning** — each tier-3 run reuses the playground; a truly clean-slate install-from-nothing test (verifies `/install-agent-team` itself, not just the running pipeline) would need `gh repo create` + full install every time. Expensive and not yet warranted.
 - **Plugin-manifest JSON validity** — not covered here; `claude -p`
   will itself fail to load the plugin if the manifest is malformed, so
   bad JSON surfaces as test failures indirectly.
