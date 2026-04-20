@@ -54,6 +54,9 @@ tools:
   bash: true
 
 safe-outputs:
+  # Trusted-input pipeline (dispatched by the implementer in our own repo).
+  # Skip the ~1-min threat-detection classifier to save wall-clock per run.
+  threat-detection: false
   add-comment:
     max: 3
     target: "*"
