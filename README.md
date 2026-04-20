@@ -67,6 +67,16 @@ Both skill names are unique, so the short form works out-of-the-box. If another 
 
 ## How the skills work
 
+### Dispatcher agent
+
+`.github/agents/agentic-workflows.agent.md` is a Claude Code **agent** for developing and maintaining the dogfooded workflows themselves. It is not a skill — it is never triggered automatically. Describe your goal to Claude Code inside this repo and the agent routes to the right upstream gh-aw prompt:
+
+- "Create a workflow that triages issues" → `create` prompt
+- "Why is the `daily-plan` workflow failing?" → `debug` prompt
+- "Upgrade all workflows to the latest gh-aw version" → `upgrade-agentic-workflows` prompt
+
+The agent is only relevant when you are working on the workflows in `.github/workflows/`. End-users discovering and installing workflows into their own repos use the `/discover-workflows` and `/install-workflow` skills above.
+
 ### `/discover-workflows`
 
 Inspects your repo's shape (language, test presence, CI configuration, recent activity) using only local `git` and filesystem tools. Then fetches the current list of workflows from the upstream [`githubnext/agentics`](https://github.com/githubnext/agentics/tree/main/workflows) catalog at runtime — no local catalog to drift — reads frontmatter from the most promising candidates, and recommends up to 3 that fit, each with a one-sentence reason specific to your repo and an estimated setup friction level. Hands off directly to `/install-workflow` once you pick one.
@@ -115,12 +125,12 @@ skills/
 
 .github/
   agents/
-    agentic-workflows.agent.md     # dispatcher agent for workflow operations
+    agentic-workflows.agent.md     # dispatcher agent: routes workflow dev tasks to upstream gh-aw prompts
   aw/
     actions-lock.json              # gh-aw extension version lock
   workflows/
-    agentics-maintenance.yml       # standard GHA workflow: gh-aw version maintenance
-    copilot-setup-steps.yml        # standard GHA workflow: Copilot coding agent environment setup
+    agentics-maintenance.yml       # auto-generated: cleans up expired issues/discussions/PRs (every 6 h)
+    copilot-setup-steps.yml        # installs gh-aw extension so Copilot Coding Agent can use gh-aw MCP server
     repo-assist.{md,lock.yml}
     daily-plan.{md,lock.yml}
     update-docs.{md,lock.yml}
@@ -130,6 +140,10 @@ skills/
     weekly-research.{md,lock.yml}
     shared/
       reporting.md                 # shared reporting component (run-link formatting)
+
+.vscode/
+  mcp.json                         # registers gh-aw MCP server for Claude Code and VS Code
+  settings.json                    # enables Markdown Copilot completions
 ```
 
 `.lock.yml` files are marked as `linguist-generated` and `merge=ours` in `.gitattributes` to prevent spurious merge conflicts.
@@ -141,6 +155,10 @@ claude --plugin-dir .
 ```
 
 Changes to `skills/*/SKILL.md` take effect on the next Claude Code session reload. Changes to `.lock.yml` files can be validated at any time with `gh aw validate` (safe — does not recompile).
+
+### VS Code
+
+`.vscode/mcp.json` is committed to the repo and registers the `gh-aw` MCP server (`gh aw mcp-server`). When you open this repo in VS Code with the Claude Code extension, the MCP server is available automatically — no manual setup needed. `.vscode/settings.json` enables Markdown Copilot completions.
 
 ## Publishing
 

@@ -19,6 +19,10 @@ claude --plugin-dir .
 
 `--plugin-dir .` tells Claude Code to load the plugin manifest from `.claude-plugin/plugin.json` and discover skills in `skills/*/SKILL.md`. The plugin runs entirely locally — no build step, no compilation.
 
+### VS Code
+
+`.vscode/mcp.json` is committed to the repo and registers the `gh-aw` MCP server (`gh aw mcp-server`). Open the repo in VS Code with the Claude Code extension and the server starts automatically — no manual setup required. `.vscode/settings.json` enables Markdown Copilot completions.
+
 ## How the plugin works
 
 ```
@@ -36,6 +40,24 @@ skills/
 **Data files** (`auth.md`) are not registered as skills — they are loaded by skills at runtime as plain markdown. Keep them colocated with the skill that owns them. The discovery skill does not use any local data file — it fetches `githubnext/agentics` at runtime.
 
 **Reload**: Changes to `SKILL.md` files take effect on the next Claude Code session. Changes to `auth.md` take effect immediately within the current session because the install skill re-reads it on each invocation.
+
+## Dispatcher agent
+
+`.github/agents/agentic-workflows.agent.md` is a Claude Code **dispatcher agent** for working on the dogfooded workflows in `.github/workflows/`. It routes to specialized upstream gh-aw prompts so you don't need to know which prompt to load.
+
+Describe your goal to Claude Code inside this repo and the agent picks the right prompt:
+
+| Task | Routes to |
+|---|---|
+| Create a new workflow from scratch | `create` prompt |
+| Modify or improve an existing workflow | `update` prompt |
+| Investigate a failing or misbehaving workflow | `debug` prompt |
+| Upgrade workflows to a new gh-aw version | `upgrade-agentic-workflows` prompt |
+| Fix open Dependabot PRs for workflow dependencies | `dependabot` prompt |
+
+The agent has `disable-model-invocation: true` — it never triggers automatically. Claude Code routes to it only when you explicitly ask about workflow development. It does not replace the `gh aw` CLI; it helps you construct the correct `gh aw` commands and edits.
+
+After any workflow `.md` change, see the [Workflow files](#workflow-files) section below for the compile → tweak → validate cycle.
 
 ## What to contribute
 
