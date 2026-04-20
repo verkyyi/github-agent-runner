@@ -1,6 +1,6 @@
 # agent-team
 
-A four-workflow pattern that turns a GitHub issue thread into an event bus for a spec → plan → implement → review pipeline. Each role is a separate gh-aw workflow; they coordinate by reading and writing structured comments on the issue and by advancing a small label state machine.
+A four-workflow pattern for a spec → plan → implement → review pipeline on a single GitHub issue. Each role is a separate gh-aw workflow; they coordinate by **dispatching the next workflow** via gh-aw's `dispatch-workflow` safe-output, passing typed inputs (issue number, iteration counter, optional PR number).
 
 > **Status**: reference pattern. Templates only — `.lock.yml` files are generated when you install into a target repo.
 
@@ -14,35 +14,39 @@ You want multiple specialized agents (not one mega-prompt) collaborating on a ta
 - You want headless UI testing / screenshots (this pattern is text-only by design).
 - You need synchronous end-to-end in a single run (use a single workflow with chained steps).
 
-## The state machine
+## The handoff model
 
-The human only ever adds **one** label: `agent-team`. The agents manage the `state:*` labels internally as they pass the task along.
+Each agent finishes its work by **emitting a `dispatch-workflow` safe-output** naming the next agent and passing the required inputs. gh-aw's compiler translates this into a `workflow_dispatch` call, which fires the target workflow even though `GITHUB_TOKEN` did the dispatch (`workflow_dispatch` is explicitly exempt from the GH Actions event-suppression rule that would otherwise block chaining).
 
 ```
    label: agent-team  (the only label a human adds)
-          |
-          v
-   [spec-agent]    posts <!-- agent-team:spec -->   ==>  state:plan-needed
-   [planner]       posts <!-- agent-team:plan -->   ==>  state:impl-needed
-   [implementer]   opens PR labeled agent-team      ==>  state:review-needed
-   [reviewer]      posts <!-- agent-team:review --> ==>  state:done
-                                                    OR   state:impl-needed (kickback)
-                                                    OR   state:blocked     (max iterations)
+          │
+          ▼
+   ┌─────────────┐  dispatch (issue_number, iteration=1)
+   │ spec-agent  │─────────────────────────────────────┐
+   └─────────────┘                                     │
+          ▼                                            ▼
+   ┌────────────────┐  dispatch (issue_number, iteration)
+   │ planner-agent  │────────────────────────────────┐
+   └────────────────┘                                │
+                                                     ▼
+   ┌────────────────────┐  dispatch (issue_number, pr_number, iteration)
+   │ implementer-agent  │──────────────────────────────────────────────┐
+   └────────────────────┘                                              │
+                                                                       ▼
+   ┌────────────────┐  approve ► state:done (stop — human merges the PR)
+   │ reviewer-agent │  block   ► state:blocked (stop — human resolves)
+   └────────────────┘  kickback► dispatch implementer-agent (
+                                     issue_number, pr_number,
+                                     iteration = iteration + 1
+                                 )
 ```
 
-Spec-agent distinguishes a fresh dispatch (no `state:*` label on the issue, no prior spec block) from label churn (pipeline already in motion) — churn is ignored silently.
-
-Exactly one `state:*` label is expected at a time. Each agent:
-
-1. Is triggered by `issues.labeled` (or `pull_request.labeled` for the reviewer).
-2. Early-exits if the triggering label doesn't match its state, or if the issue lacks `agent-team`.
-3. Removes its input state label immediately (so re-adding the label is the retry mechanism).
-4. Does its work and writes a structured comment.
-5. Adds the next state label — or `state:blocked` on max iterations / hard failure.
+`state:*` labels (`plan-needed`, `impl-needed`, `review-needed`, `done`, `blocked`) are **cosmetic breadcrumbs for humans** — they let the GitHub UI show pipeline progress at a glance. They do **not** drive control flow; the `dispatch-workflow` safe-outputs do.
 
 ## The comment contract
 
-Agents communicate via fenced HTML-comment blocks, which downstream agents grep out of the issue body + comments. Never rely on prose ordering.
+Agents communicate their work product via fenced HTML-comment blocks, which downstream agents grep out of the issue body + comments. Never rely on prose ordering.
 
 ```markdown
 <!-- agent-team:spec iteration=1 -->
@@ -51,16 +55,16 @@ Agents communicate via fenced HTML-comment blocks, which downstream agents grep 
 <!-- /agent-team:spec -->
 ```
 
-Sections: `spec`, `plan`, `review`. Each carries an `iteration` counter. The reviewer increments it on kickback; when any agent sees `iteration > MAX_ITERATIONS` (default 3), it flips to `state:blocked` instead of continuing.
+Sections: `spec`, `plan`, `review`. Each carries the `iteration` at the time it was produced. The reviewer increments `iteration` on kickback when it dispatches the implementer. When any agent sees `iteration > 3` as its input, it flips the issue to `state:blocked` and stops instead of continuing.
 
 ## Files
 
-| File | Trigger | Writes |
+| File | Trigger | Dispatches next |
 |---|---|---|
-| `spec-agent.md` | `issues.labeled` with `agent-team` (fresh dispatch) | `<!-- agent-team:spec -->` comment + `state:plan-needed` label |
-| `planner-agent.md` | `issues.labeled` with `state:plan-needed` | `<!-- agent-team:plan -->` comment + `state:impl-needed` label |
-| `implementer-agent.md` | `issues.labeled` with `state:impl-needed` | PR (with `agent-team` label, `Closes #N`) + `state:review-needed` label on issue |
-| `reviewer-agent.md` | `pull_request.labeled` with `agent-team` | `<!-- agent-team:review -->` comment + `state:done` / `state:impl-needed` / `state:blocked` label on issue |
+| `spec-agent.md` | `issues.labeled` with `agent-team` (fresh issue) | `planner-agent` (issue_number, iteration=1) |
+| `planner-agent.md` | `workflow_dispatch` (issue_number, iteration) | `implementer-agent` (issue_number, iteration) |
+| `implementer-agent.md` | `workflow_dispatch` (issue_number, iteration, pr_number?) | `reviewer-agent` (issue_number, pr_number, iteration) |
+| `reviewer-agent.md` | `workflow_dispatch` (pr_number, issue_number, iteration) | `implementer-agent` on kickback (iteration+1), else nothing |
 
 ## Install
 
@@ -95,14 +99,15 @@ Then apply the OAuth token tweak to each `.lock.yml` per [`skills/install-workfl
 
 1. Open an issue describing what you want built.
 2. Add the single label `agent-team`.
-3. Watch the thread. Each role posts its contribution as a comment; the implementer opens a PR that closes the issue when merged.
-4. Human override at any time: remove a `state:*` label to pause, edit a comment to steer the next agent, or add `state:blocked` to halt.
-5. **Retrying a blocked task**: remove all `state:*` labels from the issue, then remove and re-add the `agent-team` label. Spec-agent treats it as a fresh dispatch.
+3. Watch the thread. Each role posts its contribution as a comment; the implementer opens a draft PR that closes the issue when merged.
+4. Human override at any time: add `state:blocked` to halt, edit a comment to steer the next agent, or manually `gh workflow run` a specific role to retry a stuck stage.
+5. **Retrying a blocked task**: clear `state:blocked`, then re-add `agent-team`. Spec-agent treats it as a fresh dispatch (because the state:* labels are gone and the spec markers are already satisfied — actually: to redo from scratch, also delete the prior spec comment).
 
 ## Limits and gotchas
 
-- **Concurrency**: each workflow uses `concurrency: group: agent-team-issue-${issue_number}` to prevent two roles racing on the same issue.
-- **Max iterations**: default 3 (reviewer kickback → implementer). Tune `MAX_ITERATIONS` in each workflow's prompt.
+- **Concurrency**: each workflow uses `concurrency: group: agent-team-issue-${issue_number}` so only one role runs at a time per issue.
+- **Max iterations**: default 3 (reviewer kickback → implementer). The counter lives on the `iteration` input passed through the dispatch chain, bumped exclusively by the reviewer on kickback.
 - **Non-UI only**: no screenshot capture. Reviewer validates via tests/CI status + reading the diff.
 - **Cost**: a single task can easily spend 4× the tokens of a monolithic workflow. Set `timeout-minutes` conservatively and monitor the first few runs.
 - **No auto-merge**: the reviewer approves but never merges. Humans merge.
+- **Dispatch visibility**: each `dispatch-workflow` call shows up as a new run in the Actions tab, linked to the upstream run. Makes the chain visible.
