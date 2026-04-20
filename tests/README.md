@@ -29,6 +29,12 @@ so you don't need to install the plugin via marketplace first.
 
 Exit code 0 = all tests passed. Non-zero = at least one failed.
 
+## CI
+
+[`.github/workflows/ci-tests.yml`](../.github/workflows/ci-tests.yml) runs tier-2 invariants + the three tier-1 skill tests on every PR and on pushes to `main`. Fork PRs fail the tier-1 step (GitHub doesn't leak `CLAUDE_CODE_OAUTH_TOKEN` to fork-originated runs) — maintainers cherry-pick fork changes onto a branch in this repo to get a clean pass.
+
+Tier-3 tests stay out of CI: `test-e2e*.sh` costs real wall-time and (for `test-e2e-install-*.sh`) needs `gh` admin scopes we don't want to grant CI. Run them manually before releases.
+
 ## Expected runtime
 
 ~3-8 prompts per test file × ~30s each = roughly **4-5 minutes total**.

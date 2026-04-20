@@ -1,0 +1,50 @@
+name: CI Tests
+
+# Tier-1 + tier-2 tests on every PR. Tier-3 E2E stays manual (too expensive
+# for per-PR runs, and the skill-E2E variants need gh admin scopes we don't
+# want to grant CI). See tests/README.md for the full cadence rationale.
+#
+# Fork PRs: the tier-1 step will fail because GitHub doesn't expose
+# CLAUDE_CODE_OAUTH_TOKEN to fork-originated runs. Maintainers can cherry-pick
+# the change onto a branch in this repo to get a clean pass.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # One CI run per ref at a time; cancel in-flight on push.
+  group: ci-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Tier-2 invariants (fast, no Claude tokens)
+        run: ./tests/run-tests.sh --test test-invariants.sh --verbose
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Tier-1 skill-description tests (~5 min, uses Claude OAuth subscription)
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          set -e
+          for t in test-discover-workflows.sh test-install-workflow.sh test-install-agent-team.sh; do
+            ./tests/run-tests.sh --test "$t" --verbose
+          done
