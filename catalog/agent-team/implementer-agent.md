@@ -29,7 +29,7 @@ concurrency:
   group: agent-team-issue-${{ inputs.issue_number }}
   cancel-in-progress: false
 
-timeout-minutes: 30
+timeout-minutes: 15
 
 permissions: read-all
 
@@ -109,9 +109,11 @@ If `inputs.iteration` is greater than 3:
    - If `inputs.pr_number` is set → check out the existing PR's branch (via `gh pr view <pr_number> --json headRefName`) and push updates to it.
 
 3. Implement **only what the plan says** (plus any kickback requested changes). Do not expand scope.
-   - Follow repo conventions (read `AGENTS.md` / `CLAUDE.md` / `CONTRIBUTING.md` if present).
-   - After each logical edit, run the repo's test / lint / build command if one exists (`npm test`, `pytest`, `cargo test`, `go test ./...`, `make test`, etc.; infer from `package.json`, `Makefile`, CI).
-   - If tests fail due to your changes, fix them before the PR. Unrelated infrastructure failures → document under `## Test status`.
+   - **Trust the plan.** The planner already explored the repo, confirmed file paths exist, and identified the exact edits. Do NOT re-read surrounding files to "understand the codebase" or "check for patterns." Read only the files the plan names under `Files to change`, plus `AGENTS.md` / `CLAUDE.md` / `CONTRIBUTING.md` once for convention reminders.
+   - **Edit, don't explore.** For each step, make the edit directly. If a file's current content surprises you relative to the plan, stop (see the "plan is wrong" rule below) — do not start investigating.
+   - **Run tests ONCE at the end**, not after each edit. Find the command by reading `package.json` / `Makefile` / CI files on the first pass; cache it. Commands to look for: `npm test`, `pytest`, `cargo test`, `go test ./...`, `make test`.
+   - If tests fail due to your changes, fix and re-run (still one additional run, not per-edit). Unrelated infrastructure failures → document under `## Test status`.
+   - **Budget check**: if this task feels like it needs more than ~5 tool calls for reading or more than 2 test runs, the plan is probably wrong or you're over-exploring. Stop and re-read this section.
 
 4. Produce the PR:
    - **New PR** (first impl attempt): use `create-pull-request`.

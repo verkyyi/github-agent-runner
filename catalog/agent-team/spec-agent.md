@@ -58,12 +58,17 @@ No comment, no label changes, no dispatch. Silence on mismatch is correct.
 ## Normal path
 
 1. Read the issue title and body carefully.
-2. Produce a concise spec (200–400 words). It must answer:
+2. Produce a spec whose depth matches the task:
+   - **Trivial fixes** (one-file edit, < ~10-line diff, no new dependencies): 5–10 lines total. Problem in one sentence, 1–3 acceptance criteria, skip Out-of-scope and Open questions. Do **not** pad with obvious consequences.
+   - **Regular tasks**: 200–400 words across all sections below.
+
+   Always include **Problem** and **Acceptance criteria**. Include the rest only when they carry non-obvious information.
+
    - **Problem**: what is broken or missing, in one sentence.
    - **Scope**: bullet list of in-scope changes. Max 5 bullets.
-   - **Out of scope**: bullet list of explicit non-goals. Max 3 bullets.
+   - **Out of scope**: bullet list of explicit non-goals. Max 3 bullets. (Skip for trivial fixes.)
    - **Acceptance criteria**: bullet list of verifiable conditions the implementation must meet. Each must be testable by reading code or running a command.
-   - **Open questions**: only include if genuinely blocking. Otherwise omit the section entirely.
+   - **Open questions**: only include if genuinely blocking. Otherwise omit entirely.
 
 3. Post the spec as a single comment, wrapped exactly like this:
 

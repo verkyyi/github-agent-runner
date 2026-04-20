@@ -23,7 +23,7 @@ concurrency:
   group: agent-team-issue-${{ inputs.issue_number }}
   cancel-in-progress: false
 
-timeout-minutes: 15
+timeout-minutes: 10
 
 permissions:
   contents: read
