@@ -170,6 +170,6 @@ See the [Releases tab](https://github.com/verkyyi/github-agent-runner/releases) 
 This plugin is built on two open-source projects from the [GitHub Next](https://githubnext.com) team:
 
 - **[github/gh-aw](https://github.com/github/gh-aw)** — the agentic workflow compiler. Every workflow this plugin installs is a gh-aw `.md` source compiled by `gh aw add` / `gh aw compile`. Maintained by [@pelikhan](https://github.com/pelikhan), [@dsyme](https://github.com/dsyme), and others.
-- **[githubnext/agentics](https://github.com/githubnext/agentics)** — the curated workflow catalog. `/discover-workflows` surfaces entries from this repo; every dogfooded workflow in `.github/workflows/` traces back to a source `.md` at `githubnext/agentics/workflows/`.
+- **[githubnext/agentics](https://github.com/githubnext/agentics)** — the curated workflow catalog. `/discover-workflows` surfaces entries from this repo; every dogfooded workflow in `.github/workflows/` traces back to a source `.md` at `githubnext/agentics/workflows/`. The `shared/reporting.md` component under `.github/workflows/shared/` is also pulled from agentics and included verbatim.
 
 Pattern inspiration from **[superpowers](https://github.com/obra/superpowers)** by [@obra](https://github.com/obra) — our agent-team spec → plan → impl → review loop mirrors the superpowers skill loop, reimplemented inline for headless gh-aw execution.
