@@ -105,7 +105,7 @@ Other workflows from the catalog — `repo-assist`, `q`, `pr-nitpick-reviewer`, 
 
 Beyond the one-workflow-per-job templates above, this repo ships reference patterns for **multiple workflows collaborating** via the GitHub issue thread as an event bus:
 
-- **[agent-team](catalog/agent-team/README.md)** — four roles (spec → plan → impl → review) coordinating through structured comment blocks and a small internal label state machine. Install all four in one pass with `/install-agent-team`; dispatch tasks by opening an issue and adding a single `agent-team` label. Use when you want visible handoffs, human override between steps, and an audit trail per task.
+- **[agent-team](catalog/agent-team/README.md)** — four roles (spec → plan → impl → review) coordinating through structured comment blocks and `workflow_dispatch` handoffs. Each role finishes its work by dispatching the next workflow directly (passing `issue_number`, `iteration`, and optionally `pr_number` as typed inputs); `state:*` labels are cosmetic progress markers for humans, not control flow. Install all four in one pass with `/install-agent-team`; dispatch tasks by opening an issue and adding a single `agent-team` label. Use when you want visible handoffs, human override between steps, and an audit trail per task.
 
 ## Repository layout
 
