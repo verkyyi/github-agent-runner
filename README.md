@@ -104,6 +104,12 @@ This repo dogfoods eight workflows on itself, so you can see exactly how they're
 
 All eight use `engine: claude` and are pre-configured with the [OAuth token tweak](skills/install-workflow/auth.md).
 
+## Multi-workflow patterns
+
+Beyond the one-workflow-per-job templates above, this repo ships reference patterns for **multiple workflows collaborating** via the GitHub issue thread as an event bus:
+
+- **[agent-team](catalog/agent-team/README.md)** — four roles (spec → plan → impl → review) coordinating through structured comment blocks and a small internal label state machine. Install all four in one pass with `/install-agent-team`; dispatch tasks by opening an issue and adding a single `agent-team` label. Use when you want visible handoffs, human override between steps, and an audit trail per task.
+
 ## Repository layout
 
 ```
@@ -117,6 +123,16 @@ skills/
   install-workflow/
     SKILL.md                       # /install-workflow logic and hard rules
     auth.md                        # OAuth vs. API-key decision tree
+  install-agent-team/
+    SKILL.md                       # /install-agent-team unified installer (all 4 roles + labels + auth)
+
+catalog/
+  agent-team/                      # multi-workflow pattern: spec → plan → impl → review
+    README.md                      # label/comment contract + install steps
+    spec-agent.md
+    planner-agent.md
+    implementer-agent.md
+    reviewer-agent.md
 
 .github/
   agents/

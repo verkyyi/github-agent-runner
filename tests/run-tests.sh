@@ -49,6 +49,7 @@ Options:
 Tests:
   test-discover-workflows.sh  Verify discover skill's key behaviors
   test-install-workflow.sh    Verify install skill's auth + hard rules
+  test-install-agent-team.sh  Verify unified agent-team installer + one-label dispatch
 EOF
             exit 0 ;;
         *) echo "Unknown option: $1"; exit 1 ;;
@@ -58,6 +59,7 @@ done
 tests=(
     "test-discover-workflows.sh"
     "test-install-workflow.sh"
+    "test-install-agent-team.sh"
 )
 
 if [ -n "$SPECIFIC_TEST" ]; then
