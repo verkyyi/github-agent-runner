@@ -19,6 +19,8 @@ Open your repo in Claude Code (or any coding agent) and paste:
 
 The agent will add the marketplace, install the plugin, and run `/discover-workflows` — pick a recommendation and it hands off to `/install-workflow` for the full auth + setup walkthrough.
 
+**First time? Skip discovery and try the starter.** Running `/install-workflow` with no arguments pitches `daily-repo-status` — a zero-risk workflow that creates a daily GitHub issue summarizing your repo activity. It only needs read + issue-create permissions and gives you something visible on your first run before committing to anything broader.
+
 <details>
 <summary>Prefer the explicit slash-command form?</summary>
 
@@ -87,10 +89,11 @@ Full details — including the two-pass tweak rationale, verification grep count
 
 ## Running on this repo
 
-This repo dogfoods seven workflows on itself, so you can see exactly how they're wired up in practice:
+This repo dogfoods eight workflows on itself, so you can see exactly how they're wired up in practice:
 
 | Workflow | Trigger | Purpose |
 |---|---|---|
+| [daily-repo-status](.github/workflows/daily-repo-status.md) | Daily | Opens a `[repo-status]` issue summarizing recent activity — the recommended first-run starter |
 | [repo-assist](.github/workflows/repo-assist.md) | Every 12 h + `/repo-assist` + 👀 reaction | Labels issues, comments to unblock contributors, opens draft PRs for bug fixes and improvements |
 | [daily-plan](.github/workflows/daily-plan.md) | Daily | Analyzes repo state and maintains a rolling project-plan Discussion |
 | [update-docs](.github/workflows/update-docs.md) | Every push to `main` | Detects documentation drift and opens draft PRs to keep docs in sync with code changes |
@@ -99,7 +102,7 @@ This repo dogfoods seven workflows on itself, so you can see exactly how they're
 | [pr-nitpick-reviewer](.github/workflows/pr-nitpick-reviewer.md) | `/nit` on a PR | Inline style and best-practice review (up to 10 comments, non-blocking) |
 | [weekly-research](.github/workflows/weekly-research.md) | Weekly (Monday) | Strategic research across Anthropic policy, plugin ecosystem, gh-aw upstream, competitors, and solo-founder hiring signal |
 
-All seven use `engine: claude` and are pre-configured with the [OAuth token tweak](skills/install-workflow/auth.md).
+All eight use `engine: claude` and are pre-configured with the [OAuth token tweak](skills/install-workflow/auth.md).
 
 ## Repository layout
 
@@ -123,6 +126,7 @@ skills/
   workflows/
     agentics-maintenance.yml       # standard GHA workflow: gh-aw version maintenance
     copilot-setup-steps.yml        # standard GHA workflow: Copilot coding agent environment setup
+    daily-repo-status.{md,lock.yml}
     repo-assist.{md,lock.yml}
     daily-plan.{md,lock.yml}
     update-docs.{md,lock.yml}

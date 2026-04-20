@@ -9,13 +9,14 @@ Install one workflow from the upstream `githubnext/agentics` catalog into the cu
 
 ## Flow
 
-1. If the user didn't name a workflow, suggest running `/discover-workflows` first and stop. Otherwise, treat the name as a workflow in `githubnext/agentics/workflows/` — `gh aw add <workflow>` in Step 4 will fail cleanly if the name doesn't resolve.
+1. If the user didn't name a workflow, pitch `daily-repo-status` as the recommended starter — it creates a daily GitHub issue summarizing repo activity, needs only read + issue-create permissions, and gives visible value on the first run. Offer to proceed with it, or run `/discover-workflows` for the full catalog. Otherwise, treat the name as a workflow in `githubnext/agentics/workflows/` — `gh aw add <workflow>` in Step 4 will fail cleanly if the name doesn't resolve.
 2. Check prerequisites: `gh` CLI authenticated, `gh aw` extension installed, write access to the repo. Surface missing pieces plainly; don't try to install tools on the user's behalf.
-3. Pick auth path and set the secret — see `auth.md`. Ask once: subscription or API key? Then for OAuth path guide the user through `claude setup-token` + `gh secret set CLAUDE_CODE_OAUTH_TOKEN`; for API-key path, `gh secret set ANTHROPIC_API_KEY`.
-4. Run `gh aw add <workflow>` — compiles the `.lock.yml`.
-5. **If OAuth path**: apply the post-compile tweak from `auth.md` Step 3 (two-pass sed — never skip the `--exclude-env` carve-out). Verify with the grep counts in `auth.md` Step 4.
-6. Run `gh aw validate` (safe — does not recompile).
-7. Summarize what changed (files added, secret set, tweak applied if applicable). Remind: `gh aw compile` reverts the tweak — re-apply on every recompile.
+3. Pick auth path and set the secret — see `auth.md`. Ask once: subscription or API key? Before asking, check `gh secret list` — if the matching secret already exists, skip the setup and use it. Otherwise, for OAuth path guide the user through `claude setup-token` + `gh secret set CLAUDE_CODE_OAUTH_TOKEN`; for API-key path, `gh secret set ANTHROPIC_API_KEY`.
+4. Run `gh aw add <workflow>` — fetches source and compiles the `.lock.yml`. **The name must be fully qualified** as `githubnext/agentics/<workflow>` (bare names fail with "invalid workflow specification").
+5. Inspect the fetched `.md` for an `engine:` field. Upstream agentics workflows that omit `engine:` default to the `copilot` engine — which ignores the Claude secret and won't use your auth. If missing, add `engine: claude` to the frontmatter and run `gh aw compile <workflow>` to regenerate the `.lock.yml`.
+6. **If OAuth path**: apply the post-compile tweak from `auth.md` Step 3 (two-pass sed — never skip the `--exclude-env` carve-out). Verify with the grep counts in `auth.md` Step 4.
+7. Run `gh aw validate` (safe — does not recompile).
+8. Summarize what changed (files added, secret set or reused, engine fix applied if needed, tweak applied if applicable). Remind: `gh aw compile` reverts the tweak — re-apply on every recompile.
 
 ## Hard rules
 
