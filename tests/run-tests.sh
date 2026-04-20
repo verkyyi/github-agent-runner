@@ -30,12 +30,14 @@ fi
 VERBOSE=false
 SPECIFIC_TEST=""
 TIMEOUT=300
+WITH_E2E=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
         --verbose|-v) VERBOSE=true; shift ;;
         --test|-t) SPECIFIC_TEST="$2"; shift 2 ;;
         --timeout) TIMEOUT="$2"; shift 2 ;;
+        --with-e2e) WITH_E2E=true; shift ;;
         --help|-h)
             cat <<EOF
 Usage: $0 [options]
@@ -44,6 +46,10 @@ Options:
   --verbose, -v        Show verbose output
   --test, -t NAME      Run only the specified test file
   --timeout SECONDS    Timeout per test (default: 300)
+  --with-e2e           Also run tier-3 light E2E (test-e2e-daily.sh) against
+                       the playground (~5-7 min, dispatches a real workflow).
+                       The heavy agent-team E2E (test-e2e.sh, ~20-35 min) is
+                       never in the runner — invoke it directly.
   --help, -h           Show this help
 
 Tests:
@@ -51,6 +57,7 @@ Tests:
   test-discover-workflows.sh  Tier-1: skill-description assertions
   test-install-workflow.sh    Tier-1: skill-description assertions (auth + hard rules)
   test-install-agent-team.sh  Tier-1: skill-description assertions (unified installer)
+  test-e2e-daily.sh           Tier-3 light: real workflow run on playground (opt-in)
 EOF
             exit 0 ;;
         *) echo "Unknown option: $1"; exit 1 ;;
@@ -59,12 +66,20 @@ done
 
 # Invariants first — tier-2, runs in <1s, no Claude invocation.
 # Tier-1 skill tests follow (slow + costs tokens).
+# Tier-3 daily E2E added only with --with-e2e.
 tests=(
     "test-invariants.sh"
     "test-discover-workflows.sh"
     "test-install-workflow.sh"
     "test-install-agent-team.sh"
 )
+if [ "$WITH_E2E" = true ]; then
+    tests+=("test-e2e-daily.sh")
+    # E2E internal polling budget is 7 min; bump wrapper timeout so run-tests
+    # doesn't kill the test before its own budget runs out. Only bumps if the
+    # user didn't explicitly override.
+    [ "$TIMEOUT" = 300 ] && TIMEOUT=600
+fi
 
 if [ -n "$SPECIFIC_TEST" ]; then
     tests=("$SPECIFIC_TEST")
