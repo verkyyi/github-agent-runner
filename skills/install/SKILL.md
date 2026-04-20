@@ -23,7 +23,7 @@ Install one workflow from the sidekick catalog into the current repo, end to end
 - Never commit or push without explicit user confirmation. Workflows run on push — users must opt in deliberately.
 - Never store or echo the user's auth token. Hand the user a `gh secret set` command to run themselves, or use `gh` to set it via stdin without echoing.
 - When applying the OAuth tweak, never skip the `--exclude-env ANTHROPIC_API_KEY` carve-out. The blanket sed-replace strips the token from the sandbox and breaks auth (`"Not logged in"`). See `auth.md` for the two-pass pattern.
-- Never run `gh aw compile` silently after the tweak is applied; it reverts the tweak. If recompilation is needed, re-apply Steps 5 from the flow before committing.
+- Never run `gh aw compile` silently after the tweak is applied; it reverts the tweak. If recompilation is needed, re-apply Step 5 from the flow before committing.
 
 ## Out of scope for v0.1
 
