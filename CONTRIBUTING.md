@@ -26,7 +26,6 @@ claude --plugin-dir .
 skills/
   discover-workflows/
     SKILL.md                    ← defines /discover-workflows
-    catalog.md                  ← data loaded by the skill at runtime
   install-workflow/
     SKILL.md                    ← defines /install-workflow
     auth.md                     ← data loaded by the skill at runtime
@@ -34,33 +33,21 @@ skills/
 
 **Skill loading**: Claude Code reads each `SKILL.md` file's YAML frontmatter to register the skill. Because the skill names (`discover-workflows`, `install-workflow`) are unique across installed plugins, users invoke them with the short form (`/discover-workflows`). Prefix with the plugin name (`/github-agent-runner:discover-workflows`) only on collision. The `description` field in the frontmatter determines when Claude invokes the skill automatically based on user intent. The body of `SKILL.md` is the full instruction set for that skill.
 
-**Data files** (`catalog.md`, `auth.md`) are not registered as skills — they are loaded by skills at runtime as plain markdown. Keep them colocated with the skill that owns them.
+**Data files** (`auth.md`) are not registered as skills — they are loaded by skills at runtime as plain markdown. Keep them colocated with the skill that owns them. The discovery skill does not use any local data file — it fetches `githubnext/agentics` at runtime.
 
-**Reload**: Changes to `SKILL.md` files take effect on the next Claude Code session. Changes to data files (`catalog.md`, `auth.md`) take effect immediately within the current session because skills re-read them on each invocation.
+**Reload**: Changes to `SKILL.md` files take effect on the next Claude Code session. Changes to `auth.md` take effect immediately within the current session because the install skill re-reads it on each invocation.
 
 ## What to contribute
 
-### Adding catalog entries
+### Improving discovery matching
 
-The catalog at `skills/discover-workflows/catalog.md` is the core product value of this plugin. It currently contains 7 curated entries. Before adding a new entry:
+The `discover-workflows` skill fetches the upstream `githubnext/agentics` catalog at runtime and matches workflows against the detected repo shape. There is no local catalog to edit; contributions go into `skills/discover-workflows/SKILL.md` and target one of:
 
-1. Find the workflow in the [`githubnext/agentics`](https://github.com/githubnext/agentics) catalog.
-2. Install it locally with `gh aw add <workflow>` and verify it works end-to-end.
-3. Determine the correct auth requirement by checking whether the `.lock.yml` uses `engine: claude` (needs the OAuth tweak) or a different engine (may differ).
+- **Better repo-shape detection** — add signals the skill inspects (new language markers, framework fingerprints, CI conventions).
+- **Better matching heuristics** — tighten the rules that decide which upstream workflow descriptions fit which repo shapes.
+- **Error handling** — failure modes when the upstream fetch is slow, rate-limited, or blocked.
 
-Each entry must use the template defined in `catalog.md`:
-
-```markdown
-## <workflow-name>
-
-- **Upstream source**: `<path-in-githubnext/agentics>` or URL
-- **One-line purpose**: <what it does for the repo owner>
-- **Fits repos that**: <concrete signals — e.g. "have a `tests/` directory", "use pnpm">
-- **Setup friction**: low / medium / high
-- **Auth requirement**: OAuth path / API-key path / either
-```
-
-Quality over quantity. Aim for entries you would personally recommend, not an exhaustive list.
+Test end-to-end against a real repo before opening a PR: run `/discover-workflows` on at least two different repo shapes and confirm the recommendations make sense for each.
 
 ### Adding a skill
 
@@ -118,8 +105,8 @@ Branch naming conventions:
 
 | Type | Prefix |
 |---|---|
-| New catalog entry | `catalog/<workflow-name>` |
 | New skill | `skill/<skill-name>` |
+| Discovery-logic improvement | `discover/<short-description>` |
 | Bug fix | `fix/<short-description>` |
 | Documentation | `docs/<short-description>` |
 

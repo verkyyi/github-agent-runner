@@ -69,21 +69,9 @@ Both skill names are unique, so the short form works out-of-the-box. If another 
 
 ### `/discover-workflows`
 
-Inspects your repo's shape (language, test presence, CI configuration, recent activity) using only local `git` and filesystem tools — no external API calls. Loads the curated [catalog](skills/discover-workflows/catalog.md) and recommends up to 3 workflows that fit, each with a one-sentence reason specific to your repo and an estimated setup friction level. Hands off directly to `/install-workflow` once you pick one.
+Inspects your repo's shape (language, test presence, CI configuration, recent activity) using only local `git` and filesystem tools. Then fetches the current list of workflows from the upstream [`githubnext/agentics`](https://github.com/githubnext/agentics/tree/main/workflows) catalog at runtime — no local catalog to drift — reads frontmatter from the most promising candidates, and recommends up to 3 that fit, each with a one-sentence reason specific to your repo and an estimated setup friction level. Hands off directly to `/install-workflow` once you pick one.
 
-#### Available catalog workflows
-
-| Workflow | Purpose | Setup friction |
-|---|---|---|
-| [issue-triage](skills/discover-workflows/catalog.md#issue-triage) | Labels issues, detects spam, and posts analysis comments automatically | Low |
-| [pr-nitpick-reviewer](skills/discover-workflows/catalog.md#pr-nitpick-reviewer) | On-demand style/best-practice review via `/nit` on any PR | Low |
-| [markdown-linter](skills/discover-workflows/catalog.md#markdown-linter) | Runs Super Linter on Markdown on a weekday schedule; files issues for violations | Low |
-| [pr-fix](skills/discover-workflows/catalog.md#pr-fix) | Analyzes CI failures and pushes a fix commit via `/pr-fix` | Medium |
-| [weekly-issue-summary](skills/discover-workflows/catalog.md#weekly-issue-summary) | Posts a weekly Discussion with issue-activity trends and recommendations | Medium |
-| [daily-malicious-code-scan](skills/discover-workflows/catalog.md#daily-malicious-code-scan) | Scans recent commits for secrets, obfuscation, and supply-chain red flags | Low |
-| [daily-repo-status](skills/discover-workflows/catalog.md#daily-repo-status) | Creates a daily issue summarizing activity with productivity insights | Low |
-
-All catalog entries require Claude auth (OAuth or API-key). See [skills/install-workflow/auth.md](skills/install-workflow/auth.md) for the decision tree.
+All agentics workflows require Claude auth (OAuth or API-key). See [skills/install-workflow/auth.md](skills/install-workflow/auth.md) for the decision tree.
 
 ### `/install-workflow`
 
@@ -120,7 +108,6 @@ Full details — including the two-pass tweak rationale, verification grep count
 skills/
   discover-workflows/
     SKILL.md                       # /discover-workflows logic and hard rules
-    catalog.md                     # curated workflow catalog (7 entries)
   install-workflow/
     SKILL.md                       # /install-workflow logic and hard rules
     auth.md                        # OAuth vs. API-key decision tree
@@ -154,8 +141,4 @@ Changes to `skills/*/SKILL.md` take effect on the next Claude Code session reloa
 
 ## Publishing
 
-Once v0.1 is scope-locked:
-
-1. ~~Fill in `skills/discover-workflows/catalog.md` with curated entries~~ — catalog populated with 7 entries.
-2. ~~Update `plugin.json` with the final author name and repository URL.~~ — updated in PR #7 with `verkyyi` author and repository URLs.
-3. Submit via `claude.ai/settings/plugins/submit` or `platform.claude.com/plugins/submit`.
+Once v0.1 is scope-locked, submit via `claude.ai/settings/plugins/submit` or `platform.claude.com/plugins/submit`.
