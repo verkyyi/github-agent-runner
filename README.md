@@ -2,7 +2,12 @@
 
 A Claude Code plugin for conversational discovery and installation of GitHub agentic workflows (gh-aw), with subscription-aware auth setup.
 
-> **Status**: v0.1, pre-scope-lock.
+> **Status**: v0.2.0 — agent-team pattern validated end-to-end on the [playground dogfood](https://github.com/verkyyi/agent-team-playground/pull/5).
+
+## What's new in v0.2.0
+
+- **`agent-team` pattern** — four workflows (spec → plan → impl → review) that collaborate on a single issue via `workflow_dispatch` handoffs. Dispatch one label, get a reviewed draft PR. See [catalog/agent-team/](catalog/agent-team/README.md).
+- **`/install-agent-team` skill** — one command installs all four roles, applies the OAuth tweak to every lockfile, and creates the label set. See [skills/install-agent-team/SKILL.md](skills/install-agent-team/SKILL.md).
 
 ## What is this?
 
