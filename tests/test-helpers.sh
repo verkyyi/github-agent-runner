@@ -24,10 +24,11 @@ run_claude() {
     if [ -n "$allowed_tools" ]; then
         cmd="$cmd --allowed-tools=$allowed_tools"
     fi
-    # Let CI (or the user) force a specific model. Default: whatever the CLI
-    # picks. Tier-1 tests ask simple description questions — Haiku is fast
-    # enough and matches Sonnet/Opus output for this scope. Setting CLAUDE_MODEL
-    # on a CI job cuts wall-clock ~3-5x versus the default.
+    # Optional CLAUDE_MODEL override. CI does NOT set this — we intentionally
+    # run the same default model real users get, so regressions visible to them
+    # are visible in CI too. Local devs can export CLAUDE_MODEL=claude-haiku-*
+    # for a faster iteration loop; assertions are tuned for Sonnet/Opus output,
+    # so Haiku may fail on wording-specific checks.
     if [ -n "${CLAUDE_MODEL:-}" ]; then
         cmd="$cmd --model \"$CLAUDE_MODEL\""
     fi

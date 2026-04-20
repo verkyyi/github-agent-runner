@@ -1,12 +1,13 @@
 name: CI Tests
 
-# Tier-1 + tier-2 tests on every PR. Tier-3 E2E stays manual (too expensive
-# for per-PR runs, and the skill-E2E variants need gh admin scopes we don't
-# want to grant CI). See tests/README.md for the full cadence rationale.
+# Tier-1 + tier-2 tests on every PR. CI uses the same Claude model defaults a
+# real user gets (no model override) to test what users actually experience.
+# Tier-3 E2E stays manual (too expensive per PR, and the skill-E2E variants
+# need gh admin scopes we don't want to grant CI).
 #
 # Fork PRs: the tier-1 step will fail because GitHub doesn't expose
-# CLAUDE_CODE_OAUTH_TOKEN to fork-originated runs. Maintainers can cherry-pick
-# the change onto a branch in this repo to get a clean pass.
+# CLAUDE_CODE_OAUTH_TOKEN to fork-originated runs. Maintainers cherry-pick
+# fork changes onto a branch in this repo to get a clean pass.
 
 on:
   pull_request:
@@ -18,42 +19,56 @@ permissions:
   contents: read
 
 concurrency:
-  # One CI run per ref at a time; cancel in-flight on push.
   group: ci-tests-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  tests:
+  tier-2:
+    # Tier-2 (invariants): pure file/grep, no Claude CLI. Runs in parallel
+    # with tier-1 so a broken invariant surfaces instantly.
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 2
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: Tier-2 invariants (fast, no Claude tokens)
-        # Invoke the script directly — run-tests.sh has an upfront claude-CLI
-        # check that would abort even for tier-2 (which doesn't need Claude).
-        # We install Claude below for tier-1; tier-2 runs before that to give
-        # fast feedback on simple regressions.
+      - name: Tier-2 invariants
         run: bash ./tests/test-invariants.sh
+
+  tier-1:
+    # Tier-1 fan-out: each skill-description test runs in its own job,
+    # parallel with the others. Wall-clock = max(the three) instead of
+    # sum(the three). fail-fast: false lets every failing test surface
+    # its own diagnostics in one run.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        test:
+          - test-discover-workflows.sh
+          - test-install-workflow.sh
+          - test-install-agent-team.sh
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
+      - name: Cache npm download store
+        # Trims 5-10s off `npm install -g` by reusing the package tarball
+        # across runs. Cache key is content-addressed by OS only — we always
+        # install the latest @anthropic-ai/claude-code; on miss, we just
+        # pay the full install once and populate cache for next time.
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-claude-code
+
       - name: Install Claude Code CLI
         run: npm install -g @anthropic-ai/claude-code
 
-      - name: Tier-1 skill-description tests (uses Claude OAuth subscription)
+      - name: Run ${{ matrix.test }}
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          # Force Haiku in CI: tier-1 asks "describe this skill"-class questions
-          # that don't need Sonnet/Opus reasoning. Haiku's ~3-5x higher throughput
-          # collapses CI wall-clock from ~12min to ~2-3min. Local runs keep the
-          # default (no env var set).
-          CLAUDE_MODEL: claude-haiku-4-5-20251001
-        run: |
-          set -e
-          for t in test-discover-workflows.sh test-install-workflow.sh test-install-agent-team.sh; do
-            ./tests/run-tests.sh --test "$t" --verbose
-          done
+        run: ./tests/run-tests.sh --test "${{ matrix.test }}" --verbose
