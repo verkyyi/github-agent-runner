@@ -161,9 +161,9 @@ claude --plugin-dir .
 
 Changes to `skills/*/SKILL.md` take effect on the next Claude Code session reload. Changes to `.lock.yml` files can be validated at any time with `gh aw validate` (safe — does not recompile).
 
-## Publishing
+## Releases
 
-Once v0.1 is scope-locked, submit via `claude.ai/settings/plugins/submit` or `platform.claude.com/plugins/submit`.
+See the [Releases tab](https://github.com/verkyyi/github-agent-runner/releases) for tagged versions and changelogs. Auto-discovered by [claude-plugins.dev](https://claude-plugins.dev); also listed on [ClaudePluginHub](https://claudepluginhub.com).
 
 ## Credits
 
