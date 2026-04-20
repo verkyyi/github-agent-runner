@@ -93,7 +93,19 @@ Then apply the OAuth token tweak to each `.lock.yml` per [`skills/install-workfl
 
 - Repo Actions settings: **Read and write** permissions + **Allow GitHub Actions to create and approve pull requests**.
 - Either `CLAUDE_CODE_OAUTH_TOKEN` (subscription) or `ANTHROPIC_API_KEY` repo secret.
-- Labels (`agent-team`, `state:plan-needed`, `state:impl-needed`, `state:review-needed`, `state:done`, `state:blocked`, `agent-team:reviewed`) — the install skill creates them.
+- Seven labels — the install skill creates them automatically. For manual setup:
+
+  ```bash
+  gh label create agent-team              --color 7C3AED --description "Opt-in marker for the agent-team pipeline" --force
+  gh label create state:plan-needed       --color FEF08A --description "agent-team: ready for the planner" --force
+  gh label create state:impl-needed       --color FCD34D --description "agent-team: ready for the implementer" --force
+  gh label create state:review-needed     --color FDBA74 --description "agent-team: ready for the reviewer" --force
+  gh label create state:done              --color 86EFAC --description "agent-team: task approved by reviewer" --force
+  gh label create state:blocked           --color F87171 --description "agent-team: paused, human intervention required" --force
+  gh label create agent-team:reviewed     --color A7F3D0 --description "agent-team: PR has been reviewed" --force
+  ```
+
+  `--force` makes the command idempotent — safe to re-run if labels already exist.
 
 ## Kicking off a task
 

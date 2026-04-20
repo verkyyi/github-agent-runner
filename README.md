@@ -161,6 +161,66 @@ claude --plugin-dir .
 
 Changes to `skills/*/SKILL.md` take effect on the next Claude Code session reload. Changes to `.lock.yml` files can be validated at any time with `gh aw validate` (safe — does not recompile).
 
+## Troubleshooting
+
+### `gh aw add` fails with "extension not found"
+
+```
+error: extension not found: gh-aw
+```
+
+The `gh aw` extension is not installed. Run:
+
+```bash
+gh extension install githubnext/gh-aw
+```
+
+---
+
+### OAuth tweak reverted after recompile
+
+Symptoms: workflow runs succeed but Claude reports "model not found" or "no valid API key". The recompile (`gh aw compile`, `gh aw upgrade`, `gh aw fix`) overwrites the `.lock.yml` and discards the two-pass OAuth tweak.
+
+Fix: re-apply [Steps 3–4 from auth.md](skills/install-workflow/auth.md#step-3--apply-the-post-compile-tweak-to-every-lockyml) after every recompile. `gh aw validate` is safe — it does not recompile.
+
+---
+
+### Workflow doesn't run after label is added
+
+1. **Actions not enabled**: go to Settings → Actions → General → "Allow all actions and reusable workflows".
+2. **PR creation blocked**: the agent-team implementer must be able to open PRs. Settings → Actions → General → "Allow GitHub Actions to create and approve pull requests" must be ON.
+3. **Secret missing**: check `gh secret list` and confirm `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY` is present.
+4. **Wrong trigger**: `spec-agent` triggers on `issues.labeled` with label `agent-team`. Other roles trigger on `workflow_dispatch`. Only the human-applied label starts the chain; later dispatches are internal.
+
+---
+
+### `gh auth status` fails or shows wrong account
+
+Run `gh auth login` and authenticate with an account that has write access to the target repo. The `gh` CLI and `gh aw` use the same credential store.
+
+---
+
+### Label already exists during `/install-agent-team`
+
+The skill uses `gh label create --force`, which updates an existing label's color and description to match the expected values. "Already exists" warnings are safe to ignore — the install is idempotent.
+
+---
+
+### Agent-team pipeline stalls mid-chain
+
+If any role times out or errors, the chain stops (subsequent `workflow_dispatch` calls are never emitted). To resume:
+
+1. Check the failed run in Actions → identify which role stalled.
+2. If stalled due to a code issue, edit the relevant issue comment to steer the next agent.
+3. Remove `state:blocked` (if set), then manually trigger the stalled role: `gh workflow run <role-name>.lock.yml -f issue_number=N -f iteration=N`.
+4. For a full restart: remove all `state:*` labels, delete the prior spec/plan/review comments, and re-add `agent-team`.
+
+---
+
+### Grep count mismatch after OAuth tweak
+
+After the two-pass sed, the verification greps should return specific counts (see [auth.md Step 4](skills/install-workflow/auth.md#step-4--verify-the-tweak-shape)). A mismatch means the tweak didn't apply cleanly. Recompile the workflow and apply the tweak again from scratch — do not attempt partial fixes.
+
 ## Publishing
 
 Once v0.1 is scope-locked, submit via `claude.ai/settings/plugins/submit` or `platform.claude.com/plugins/submit`.
