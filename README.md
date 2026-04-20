@@ -104,6 +104,7 @@ Full details — including the two-pass tweak rationale, verification grep count
 ```
 .claude-plugin/
   plugin.json                      # plugin manifest (name, version, license)
+  marketplace.json                 # self-hosted marketplace listing (enables /plugin marketplace add)
 
 skills/
   discover-workflows/
@@ -118,6 +119,8 @@ skills/
   aw/
     actions-lock.json              # gh-aw extension version lock
   workflows/
+    agentics-maintenance.yml       # standard GHA workflow: gh-aw version maintenance
+    copilot-setup-steps.yml        # standard GHA workflow: Copilot coding agent environment setup
     repo-assist.{md,lock.yml}
     daily-plan.{md,lock.yml}
     update-docs.{md,lock.yml}
