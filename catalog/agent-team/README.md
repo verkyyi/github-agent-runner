@@ -106,3 +106,4 @@ Then apply the OAuth token tweak to each `.lock.yml` per [`skills/install-workfl
 - **Non-UI only**: no screenshot capture. Reviewer validates via tests/CI status + reading the diff.
 - **Cost**: a single task can easily spend 4× the tokens of a monolithic workflow. Set `timeout-minutes` conservatively and monitor the first few runs.
 - **No auto-merge**: the reviewer approves but never merges. Humans merge.
+- **gh-aw expression allowlist**: gh-aw rejects whole-object expressions (`toJSON(github.event)`, bare `github.event`) at compile time — only specific scalar fields are allowed (e.g. `github.event.label.name`, `github.event.issue.number`). When editing agent prompts, always read scalar trigger fields directly and fetch aggregates (label lists, full issue bodies) via `gh api` or the GitHub toolset at runtime. See [CONTRIBUTING.md](../../CONTRIBUTING.md#gh-aw-expression-allowlist) for the full table and pattern.

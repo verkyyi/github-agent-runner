@@ -94,6 +94,23 @@ If a workflow `.md` source needs changing:
 3. Re-apply the OAuth tweak (Steps 3–4 from `auth.md`) before committing.
 4. Run `gh aw validate` to confirm the generated file is valid.
 
+### gh-aw expression allowlist
+
+gh-aw enforces a **compile-time allowlist** on GitHub Actions expression variables. Whole-object references are rejected; only specific scalar fields pass validation.
+
+| Rejected | Allowed |
+|---|---|
+| `toJSON(github.event)` | `github.event.label.name` |
+| `github.event` (bare) | `github.event.issue.number` |
+| `github.event.pull_request` (object) | `github.event.pull_request.number` |
+
+**Pattern to follow** when an agent needs data that is not available as a scalar expression:
+
+1. Read the triggering scalar directly (e.g. `github.event.label.name`).
+2. Fetch any additional context at runtime via a `gh api` call or the GitHub toolset (e.g. to get the full label list for an issue).
+
+This is why `spec-agent.md` reads the label name from `github.event.label.name` and fetches the issue's current labels via `gh api` rather than dumping the whole event. Do not regress this pattern when editing agent prompts in `catalog/agent-team/` or adding new agents.
+
 ## Submitting changes
 
 1. Fork the repo and create a branch: `git checkout -b <type>/<short-description>`
