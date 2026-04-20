@@ -111,3 +111,31 @@ Then apply the OAuth token tweak to each `.lock.yml` per [`skills/install-workfl
 - **Cost**: a single task can easily spend 4× the tokens of a monolithic workflow. Set `timeout-minutes` conservatively and monitor the first few runs.
 - **No auto-merge**: the reviewer approves but never merges. Humans merge.
 - **Dispatch visibility**: each `dispatch-workflow` call shows up as a new run in the Actions tab, linked to the upstream run. Makes the chain visible.
+
+## Performance expectations
+
+Default timeouts and observed wall-clock times from dogfood (a small single-file fix):
+
+| Role | `timeout-minutes` | Observed |
+|---|---|---|
+| spec-agent | 10 m | ~3–4 m |
+| planner-agent | 10 m | ~4–5 m |
+| implementer-agent | 15 m | ~5–20 m (high variance) |
+| reviewer-agent | 12 m | ~8–10 m |
+
+**Total for a simple task**: ~25–40 min end-to-end. The implementer dominates on large or ambiguous tasks.
+
+### Why the implementer varies most
+
+The implementer has the widest variance because it can drift into re-exploring the codebase beyond what the plan specifies. The prompt enforces a **"trust the plan"** rule: read only the files the plan names, make edits directly, run tests once at the end. A task that feels like it needs more than ~5 tool calls for reading is a sign the plan is underspecified — stop and surface to the human rather than continuing.
+
+### Spec depth scales with task size
+
+To keep downstream context small, the spec-agent produces differently-sized specs depending on task scope:
+
+- **Trivial fix** (one-file edit, < ~10-line diff, no new dependencies): 5–10 lines — problem statement + acceptance criteria only.
+- **Regular task**: 200–400 words covering all sections (Problem, Scope, Out of scope, Acceptance criteria, Open questions).
+
+### Tuning timeouts
+
+The defaults above leave ~2–3× headroom over observed times. If your repo's tasks consistently run faster or slower, adjust `timeout-minutes` in the relevant agent `.md` files and recompile. Tighter timeouts catch stuck agents earlier; looser ones accommodate larger tasks.
