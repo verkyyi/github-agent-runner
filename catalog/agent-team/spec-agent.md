@@ -43,7 +43,7 @@ You are the **spec agent** in a four-role agent team. You run when a human opts 
 
 ## Early exit
 
-Inspect `${{ toJSON(github.event) }}`. **Exit immediately without any output** if any of the following is true:
+Read the triggering label name from `github.event.label.name` (inspect the GitHub event payload via your tools) and the issue's current labels via `gh api`. **Exit immediately without any output** if any of the following is true:
 
 - `github.event.label.name` is not `agent-team`.
 - The issue already carries any `state:*` label (`state:plan-needed`, `state:impl-needed`, `state:review-needed`, `state:done`, `state:blocked`). The pipeline is already in motion — ignore.
