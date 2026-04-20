@@ -74,7 +74,17 @@ Edit the relevant `SKILL.md` or data file. Test by running the skill locally wit
 
 ## Testing
 
-There is no automated test harness for skills — they are instruction sets interpreted by Claude Code, not code with unit tests. The validation steps are:
+The `tests/` directory contains a headless test suite that invokes Claude Code (`claude -p`) with questions about each skill and asserts patterns against the responses. This catches instruction drift — if a future edit removes a critical rule, Claude's description of the skill will change and the assertion fails.
+
+```bash
+./tests/run-tests.sh                    # run all tests (~4-5 minutes)
+./tests/run-tests.sh --verbose          # show per-assertion output
+./tests/run-tests.sh --test test-install-workflow.sh
+```
+
+See [tests/README.md](tests/README.md) for full details, including what's covered, what's deferred, and how to add a new test file.
+
+In addition to the automated suite, validate locally before opening a PR:
 
 1. **Load the plugin**: `claude --plugin-dir .` — confirm no startup errors.
 2. **Run the skill manually**: invoke `/discover-workflows` or `/install-workflow` and walk through the flow.
@@ -85,7 +95,7 @@ Never test by committing untested changes to `main`. The installed workflows run
 
 ## Workflow files
 
-The `.github/workflows/` directory contains seven dogfooded workflows. These are managed by `gh aw` — do not edit `.lock.yml` files by hand except to apply the OAuth tweak described in [skills/install-workflow/auth.md](skills/install-workflow/auth.md).
+The `.github/workflows/` directory contains eight dogfooded workflows. These are managed by `gh aw` — do not edit `.lock.yml` files by hand except to apply the OAuth tweak described in [skills/install-workflow/auth.md](skills/install-workflow/auth.md).
 
 If a workflow `.md` source needs changing:
 
