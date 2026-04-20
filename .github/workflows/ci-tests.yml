@@ -30,7 +30,11 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Tier-2 invariants (fast, no Claude tokens)
-        run: ./tests/run-tests.sh --test test-invariants.sh --verbose
+        # Invoke the script directly — run-tests.sh has an upfront claude-CLI
+        # check that would abort even for tier-2 (which doesn't need Claude).
+        # We install Claude below for tier-1; tier-2 runs before that to give
+        # fast feedback on simple regressions.
+        run: bash ./tests/test-invariants.sh
 
       - name: Setup Node
         uses: actions/setup-node@v4
