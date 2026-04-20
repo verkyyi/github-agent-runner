@@ -87,19 +87,20 @@ Full details — including the two-pass tweak rationale, verification grep count
 
 ## Running on this repo
 
-This repo dogfoods seven workflows on itself, so you can see exactly how they're wired up in practice:
+This repo dogfoods eight workflows on itself, so you can see exactly how they're wired up in practice:
 
 | Workflow | Trigger | Purpose |
 |---|---|---|
 | [repo-assist](.github/workflows/repo-assist.md) | Every 12 h + `/repo-assist` + 👀 reaction | Labels issues, comments to unblock contributors, opens draft PRs for bug fixes and improvements |
 | [daily-plan](.github/workflows/daily-plan.md) | Daily | Analyzes repo state and maintains a rolling project-plan Discussion |
+| [daily-repo-status](.github/workflows/daily-repo-status.md) | Daily | Posts a daily repo status issue with recent activity, progress highlights, and actionable next steps |
 | [update-docs](.github/workflows/update-docs.md) | Every push to `main` | Detects documentation drift and opens draft PRs to keep docs in sync with code changes |
 | [q](.github/workflows/q.md) | `/q` or 🚀 reaction | Expert workflow optimizer — audits live logs, identifies inefficiencies, opens optimization PRs |
 | [markdown-linter](.github/workflows/markdown-linter.md) | Weekdays at 14:00 UTC | Runs Super Linter on Markdown; opens time-limited issues for violations |
 | [pr-nitpick-reviewer](.github/workflows/pr-nitpick-reviewer.md) | `/nit` on a PR | Inline style and best-practice review (up to 10 comments, non-blocking) |
 | [weekly-research](.github/workflows/weekly-research.md) | Weekly (Monday) | Strategic research across Anthropic policy, plugin ecosystem, gh-aw upstream, competitors, and solo-founder hiring signal |
 
-All seven use `engine: claude` and are pre-configured with the [OAuth token tweak](skills/install-workflow/auth.md).
+All eight use `engine: claude` and are pre-configured with the [OAuth token tweak](skills/install-workflow/auth.md).
 
 ## Repository layout
 
@@ -125,6 +126,7 @@ skills/
     copilot-setup-steps.yml        # standard GHA workflow: Copilot coding agent environment setup
     repo-assist.{md,lock.yml}
     daily-plan.{md,lock.yml}
+    daily-repo-status.{md,lock.yml}
     update-docs.{md,lock.yml}
     q.{md,lock.yml}
     markdown-linter.{md,lock.yml}
