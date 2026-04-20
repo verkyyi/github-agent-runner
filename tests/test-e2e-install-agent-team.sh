@@ -7,9 +7,9 @@
 # labels + no hand-edits needed)?
 #
 # Usage:
-#   ./tests/test-e2e-skill.sh                       # fresh run, cleanup on exit
-#   ./tests/test-e2e-skill.sh --keep               # leave repo + branch around
-#   ./tests/test-e2e-skill.sh --repo <name>         # use a specific repo name
+#   ./tests/test-e2e-install-agent-team.sh                       # fresh run, cleanup on exit
+#   ./tests/test-e2e-install-agent-team.sh --keep               # leave repo + branch around
+#   ./tests/test-e2e-install-agent-team.sh --repo <name>         # use a specific repo name
 #
 # Cost: ~5-8 min wall-clock, creates 1 private repo per run (deleted on success
 # unless --keep). Claude token cost for the skill invocation (OAuth subscription = free).

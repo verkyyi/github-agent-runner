@@ -43,7 +43,8 @@ Each run burns modest tokens against your Claude account.
 | 1 | `test-install-workflow.sh`   | Skill loads; mentions `gh aw add` + `gh secret set`; documents both auth paths; understands the `--exclude-env` carve-out; hard rules (never writes YAML by hand, never stores tokens) | ~2min |
 | 1 | `test-install-agent-team.sh` | Skill loads; pitches the four roles (spec/plan/impl/review); one-label dispatch via `agent-team`; atomic install (all-or-nothing); auth wired once; OAuth tweak applied to every lockfile; creates the `state:*` label set; inherits the no-hand-written-YAML / no-token-echo hard rules | ~2min |
 | 3 | `test-e2e.sh` (opt-in) | Real pipeline run on `verkyyi/agent-team-playground`: opens a unique canned issue, labels `agent-team`, polls until terminal state, asserts PR exists with `Closes #N` + test-status section + reviewer verdict + pipeline-summary comment. Collects per-stage timings and compares to last run — yellow flag if any stage or total wall-clock exceeds 150% of baseline. **Not** run by default; opt in via `--tier3` (see below). | ~20-35min |
-| 3-skill | `test-e2e-skill.sh` (opt-in, destructive) | Skill E2E for `/install-agent-team`: `gh repo create`s a throwaway private repo, pre-seeds the OAuth secret from SSM (auth is separately documented, not exercised), invokes the skill via `claude -p --plugin-dir <repo>`, then asserts all four workflows committed + OAuth tweak applied (2/9 grep shape) + all seven labels created + skill printed its completion marker. Deletes the throwaway repo on success (keep via `--keep`). | ~5-8min |
+| 3-skill | `test-e2e-install-workflow.sh` (opt-in, destructive) | Skill E2E for `/install-workflow`: `gh repo create`s a throwaway private repo, pre-seeds the OAuth secret from SSM, invokes the skill via `claude -p --plugin-dir <repo>` with a target workflow (default `daily-repo-status`). Asserts the `.md` + `.lock.yml` are committed, frontmatter has `engine: claude` + `source: githubnext/agentics`, the two-pass OAuth tweak was correctly applied (API≥2, OAUTH≥5, `--exclude-env ANTHROPIC_API_KEY` preserved), and skill printed its completion marker. Single-workflow path is the plugin's core; test exercises Step-5's engine-fix-and-recompile flow since upstream agentics omits `engine:`. Deletes the repo on success (`--keep` to retain). | ~2-4min |
+| 3-skill | `test-e2e-install-agent-team.sh` (opt-in, destructive) | Skill E2E for `/install-agent-team` (the multi-workflow installer). Same throwaway-repo pattern: asserts all four workflows committed + OAuth tweak on every lockfile + all seven labels created + skill printed its completion marker. | ~5-8min |
 
 **Tier philosophy**:
 - **Tier 2** — add invariants only when a bug is caught in review, not preemptively. Each assertion should be linkable to a specific past commit.
@@ -76,17 +77,24 @@ Each run appends to `tests/e2e-history.jsonl` (committed). The first run has no 
 
 ### Skill E2E (pre-merge verification of skill edits)
 
-`test-e2e.sh` tests already-installed workflows; it doesn't exercise the install **skills**. For PRs that edit `skills/install-agent-team/SKILL.md` (or similar), use:
+`test-e2e.sh` tests already-installed workflows; it doesn't exercise the install **skills**. Two separate skill-E2E scripts cover the two install surfaces:
 
 ```bash
-./tests/test-e2e-skill.sh
+# For PRs that edit skills/install-workflow/SKILL.md — the single-workflow
+# installer (plugin core path). Default target: daily-repo-status.
+./tests/test-e2e-install-workflow.sh
+./tests/test-e2e-install-workflow.sh --workflow update-docs   # alternate target
+
+# For PRs that edit skills/install-agent-team/SKILL.md — the multi-workflow
+# installer (agent-team pattern).
+./tests/test-e2e-install-agent-team.sh
 ```
 
-This provisions a fresh private throwaway repo, pre-seeds the OAuth secret (from SSM — the same pattern the playground uses), invokes `/install-agent-team` via `claude -p --plugin-dir $REPO_ROOT`, asserts the skill's end-state on the remote (4 workflow files committed, OAuth tweak applied, all 7 labels created), and deletes the repo on success. Runs in ~5-8 min.
+Both scripts follow the same pattern: provision a fresh private throwaway repo, pre-seed the OAuth secret from SSM, invoke the skill via `claude -p --plugin-dir $REPO_ROOT`, assert the remote end-state, delete the repo on success. `--keep` retains the repo for post-mortem.
 
-**What it does NOT exercise**: the `claude setup-token` interactive browser step (headless-hostile by design — see `skills/install-workflow/auth.md`). The test pre-sets the secret and the skill's `gh secret list` check skips the setup flow.
+**What neither exercises**: the `claude setup-token` interactive browser step (headless-hostile by design — see `skills/install-workflow/auth.md`). The test pre-sets the secret and the skill's `gh secret list` check skips the setup flow.
 
-**Destructive**: creates a private repo each run, deletes it on success. Pass `--keep` to leave it around for inspection after a failure.
+**Destructive**: creates a private repo each run, deletes it on success.
 
 ## What's NOT covered (deferred)
 
