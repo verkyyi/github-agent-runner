@@ -1,6 +1,6 @@
-# Contributing to sidekick
+# Contributing to github-agent-runner
 
-Thanks for improving sidekick. This guide covers everything needed to add catalog entries, extend skills, or contribute fixes.
+Thanks for improving this plugin. This guide covers everything needed to add catalog entries, extend skills, or contribute fixes.
 
 ## Prerequisites
 
@@ -24,15 +24,15 @@ claude --plugin-dir .
 ```
 .claude-plugin/plugin.json      ← plugin manifest (name, version, description)
 skills/
-  discover/
-    SKILL.md                    ← defines /sidekick:discover
+  discover-workflows/
+    SKILL.md                    ← defines /discover-workflows
     catalog.md                  ← data loaded by the skill at runtime
-  install/
-    SKILL.md                    ← defines /sidekick:install
+  install-workflow/
+    SKILL.md                    ← defines /install-workflow
     auth.md                     ← data loaded by the skill at runtime
 ```
 
-**Skill loading**: Claude Code reads each `SKILL.md` file's YAML frontmatter to register the skill under `/sidekick:<name>`. The `description` field in the frontmatter determines when Claude invokes the skill automatically based on user intent. The body of `SKILL.md` is the full instruction set for that skill.
+**Skill loading**: Claude Code reads each `SKILL.md` file's YAML frontmatter to register the skill. Because the skill names (`discover-workflows`, `install-workflow`) are unique across installed plugins, users invoke them with the short form (`/discover-workflows`). Prefix with the plugin name (`/github-agent-runner:discover-workflows`) only on collision. The `description` field in the frontmatter determines when Claude invokes the skill automatically based on user intent. The body of `SKILL.md` is the full instruction set for that skill.
 
 **Data files** (`catalog.md`, `auth.md`) are not registered as skills — they are loaded by skills at runtime as plain markdown. Keep them colocated with the skill that owns them.
 
@@ -42,7 +42,7 @@ skills/
 
 ### Adding catalog entries
 
-The catalog at `skills/discover/catalog.md` is the core product value of sidekick. It currently contains 7 curated entries. Before adding a new entry:
+The catalog at `skills/discover-workflows/catalog.md` is the core product value of this plugin. It currently contains 7 curated entries. Before adding a new entry:
 
 1. Find the workflow in the [`githubnext/agentics`](https://github.com/githubnext/agentics) catalog.
 2. Install it locally with `gh aw add <workflow>` and verify it works end-to-end.
@@ -72,14 +72,14 @@ Quality over quantity. Aim for entries you would personally recommend, not an ex
    description: <one sentence — used for automatic invocation matching>
    ---
 
-   # sidekick: <skill-name>
+   # <skill-name>
 
    <instruction body>
    ```
 
-2. The skill is invocable as `/sidekick:<skill-name>` immediately on reload.
+2. The skill is invocable as `/<skill-name>` immediately on reload (or `/github-agent-runner:<skill-name>` if the short name collides with another plugin).
 3. Colocate any data files the skill needs in `skills/<skill-name>/`.
-4. Add hard rules and out-of-scope sections following the pattern in `discover/SKILL.md` and `install/SKILL.md`.
+4. Add hard rules and out-of-scope sections following the pattern in `discover-workflows/SKILL.md` and `install-workflow/SKILL.md`.
 
 ### Fixing existing skills
 
@@ -90,15 +90,15 @@ Edit the relevant `SKILL.md` or data file. Test by running the skill locally wit
 There is no automated test harness for skills — they are instruction sets interpreted by Claude Code, not code with unit tests. The validation steps are:
 
 1. **Load the plugin**: `claude --plugin-dir .` — confirm no startup errors.
-2. **Run the skill manually**: invoke `/sidekick:discover` or `/sidekick:install` and walk through the flow.
+2. **Run the skill manually**: invoke `/discover-workflows` or `/install-workflow` and walk through the flow.
 3. **Validate lock files** (if you changed `.lock.yml` files): `gh aw validate` — safe, does not recompile.
-4. **Check grep counts** (if you applied the OAuth tweak): see [skills/install/auth.md](skills/install/auth.md#step-4--verify-the-tweak-shape).
+4. **Check grep counts** (if you applied the OAuth tweak): see [skills/install-workflow/auth.md](skills/install-workflow/auth.md#step-4--verify-the-tweak-shape).
 
 Never test by committing untested changes to `main`. The installed workflows run on push to `main`, so a broken install skill or a bad `.lock.yml` will trigger a live workflow run.
 
 ## Workflow files
 
-The `.github/workflows/` directory contains seven dogfooded workflows. These are managed by `gh aw` — do not edit `.lock.yml` files by hand except to apply the OAuth tweak described in [skills/install/auth.md](skills/install/auth.md).
+The `.github/workflows/` directory contains seven dogfooded workflows. These are managed by `gh aw` — do not edit `.lock.yml` files by hand except to apply the OAuth tweak described in [skills/install-workflow/auth.md](skills/install-workflow/auth.md).
 
 If a workflow `.md` source needs changing:
 

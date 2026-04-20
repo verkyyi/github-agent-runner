@@ -1,12 +1,12 @@
 # github-agent-runner
 
-Host repo for the **sidekick** Claude Code plugin — conversational discovery and installation of GitHub agentic workflows, with subscription-aware auth setup.
+A Claude Code plugin for conversational discovery and installation of GitHub agentic workflows (gh-aw), with subscription-aware auth setup.
 
 > **Status**: v0.1, pre-scope-lock.
 
 ## What is this?
 
-`sidekick` is a Claude Code plugin that helps you add AI-powered automation to any GitHub repository. It does two things:
+`github-agent-runner` is a Claude Code plugin that helps you add AI-powered automation to any GitHub repository. It does two things:
 
 1. **Discover** — recommends 1–3 agentic workflows from a curated catalog that match your repo's shape (language, CI setup, activity level, etc.).
 2. **Install** — walks you through fetching, authenticating, and wiring up each workflow end-to-end, including the OAuth token tweak that makes your Claude subscription work inside GitHub Actions.
@@ -25,11 +25,11 @@ This repo also **dogfoods seven of those workflows on itself**, so you can see e
 | [pr-nitpick-reviewer](.github/workflows/pr-nitpick-reviewer.md) | `/nit` on a PR | Inline style and best-practice review (up to 10 comments, non-blocking) |
 | [weekly-research](.github/workflows/weekly-research.md) | Weekly (Monday) | Strategic research across Anthropic policy, plugin ecosystem, gh-aw upstream, competitors, and solo-founder hiring signal |
 
-All seven use `engine: claude` and are pre-configured with the [OAuth token tweak](skills/install/auth.md) so they run on your Claude subscription rather than billing the API per-token.
+All seven use `engine: claude` and are pre-configured with the [OAuth token tweak](skills/install-workflow/auth.md) so they run on your Claude subscription rather than billing the API per-token.
 
 ## Prerequisites
 
-To use the sidekick plugin:
+To use the plugin:
 
 - [Claude Code](https://claude.ai/code) CLI installed and authenticated
 - `gh` CLI authenticated (`gh auth login`)
@@ -43,12 +43,12 @@ To run the installed workflows on your own fork:
   - API-key path: `ANTHROPIC_API_KEY`
 - GitHub Discussions enabled (required by `daily-plan` — uses the "announcements" category — and `weekly-research` — uses the "ideas" category)
 
-See [skills/install/auth.md](skills/install/auth.md) for the complete auth decision tree.
+See [skills/install-workflow/auth.md](skills/install-workflow/auth.md) for the complete auth decision tree.
 
 ## Quick start
 
 ```bash
-# Load sidekick for local development
+# Load the plugin for local development
 git clone https://github.com/verkyyi/github-agent-runner
 cd github-agent-runner
 claude --plugin-dir .
@@ -57,33 +57,35 @@ claude --plugin-dir .
 Then inside Claude Code:
 
 ```
-/sidekick:discover    # get tailored workflow recommendations for your repo
-/sidekick:install     # install a recommended workflow with full auth setup
+/discover-workflows    # get tailored workflow recommendations for your repo
+/install-workflow      # install a recommended workflow with full auth setup
 ```
+
+Both skill names are unique, so the short form works out-of-the-box. If another installed plugin ever ships the same skill name, prefix with the plugin name to disambiguate: `/github-agent-runner:discover-workflows`.
 
 ## How the skills work
 
-### `/sidekick:discover`
+### `/discover-workflows`
 
-Inspects your repo's shape (language, test presence, CI configuration, recent activity) using only local `git` and filesystem tools — no external API calls. Loads the curated [catalog](skills/discover/catalog.md) and recommends up to 3 workflows that fit, each with a one-sentence reason specific to your repo and an estimated setup friction level. Hands off directly to `/sidekick:install` once you pick one.
+Inspects your repo's shape (language, test presence, CI configuration, recent activity) using only local `git` and filesystem tools — no external API calls. Loads the curated [catalog](skills/discover-workflows/catalog.md) and recommends up to 3 workflows that fit, each with a one-sentence reason specific to your repo and an estimated setup friction level. Hands off directly to `/install-workflow` once you pick one.
 
 #### Available catalog workflows
 
 | Workflow | Purpose | Setup friction |
 |---|---|---|
-| [issue-triage](skills/discover/catalog.md#issue-triage) | Labels issues, detects spam, and posts analysis comments automatically | Low |
-| [pr-nitpick-reviewer](skills/discover/catalog.md#pr-nitpick-reviewer) | On-demand style/best-practice review via `/nit` on any PR | Low |
-| [markdown-linter](skills/discover/catalog.md#markdown-linter) | Runs Super Linter on Markdown on a weekday schedule; files issues for violations | Low |
-| [pr-fix](skills/discover/catalog.md#pr-fix) | Analyzes CI failures and pushes a fix commit via `/pr-fix` | Medium |
-| [weekly-issue-summary](skills/discover/catalog.md#weekly-issue-summary) | Posts a weekly Discussion with issue-activity trends and recommendations | Medium |
-| [daily-malicious-code-scan](skills/discover/catalog.md#daily-malicious-code-scan) | Scans recent commits for secrets, obfuscation, and supply-chain red flags | Low |
-| [daily-repo-status](skills/discover/catalog.md#daily-repo-status) | Creates a daily issue summarizing activity with productivity insights | Low |
+| [issue-triage](skills/discover-workflows/catalog.md#issue-triage) | Labels issues, detects spam, and posts analysis comments automatically | Low |
+| [pr-nitpick-reviewer](skills/discover-workflows/catalog.md#pr-nitpick-reviewer) | On-demand style/best-practice review via `/nit` on any PR | Low |
+| [markdown-linter](skills/discover-workflows/catalog.md#markdown-linter) | Runs Super Linter on Markdown on a weekday schedule; files issues for violations | Low |
+| [pr-fix](skills/discover-workflows/catalog.md#pr-fix) | Analyzes CI failures and pushes a fix commit via `/pr-fix` | Medium |
+| [weekly-issue-summary](skills/discover-workflows/catalog.md#weekly-issue-summary) | Posts a weekly Discussion with issue-activity trends and recommendations | Medium |
+| [daily-malicious-code-scan](skills/discover-workflows/catalog.md#daily-malicious-code-scan) | Scans recent commits for secrets, obfuscation, and supply-chain red flags | Low |
+| [daily-repo-status](skills/discover-workflows/catalog.md#daily-repo-status) | Creates a daily issue summarizing activity with productivity insights | Low |
 
-All catalog entries require Claude auth (OAuth or API-key). See [skills/install/auth.md](skills/install/auth.md) for the decision tree.
+All catalog entries require Claude auth (OAuth or API-key). See [skills/install-workflow/auth.md](skills/install-workflow/auth.md) for the decision tree.
 
-### `/sidekick:install`
+### `/install-workflow`
 
-Takes a workflow name (or prompts you to run `/sidekick:discover` first) and:
+Takes a workflow name (or prompts you to run `/discover-workflows` first) and:
 
 1. Checks that `gh` CLI and `gh aw` extension are available, and that you have write access
 2. Asks once whether you have a Claude subscription or prefer the API-key path
@@ -103,22 +105,22 @@ Two paths are supported:
 | **Cost** | Free (included in subscription) | Pay-per-token |
 | **Post-compile tweak** | Required (two-pass sed) | Not needed |
 
-Full details — including the two-pass tweak rationale, verification grep counts, failure modes, and the ToS boundary explanation — are in [skills/install/auth.md](skills/install/auth.md).
+Full details — including the two-pass tweak rationale, verification grep counts, failure modes, and the ToS boundary explanation — are in [skills/install-workflow/auth.md](skills/install-workflow/auth.md).
 
-**Important**: `gh aw compile` reverts the OAuth tweak in `.lock.yml` files. Re-apply [Steps 3–4 from auth.md](skills/install/auth.md#step-3--apply-the-post-compile-tweak-to-every-lockyml) after any recompile event (`gh aw compile`, `gh aw upgrade`, `gh aw fix`, or editing the `.md` source).
+**Important**: `gh aw compile` reverts the OAuth tweak in `.lock.yml` files. Re-apply [Steps 3–4 from auth.md](skills/install-workflow/auth.md#step-3--apply-the-post-compile-tweak-to-every-lockyml) after any recompile event (`gh aw compile`, `gh aw upgrade`, `gh aw fix`, or editing the `.md` source).
 
 ## Repository layout
 
 ```
 .claude-plugin/
-  plugin.json                      # sidekick plugin manifest (name, version, license)
+  plugin.json                      # plugin manifest (name, version, license)
 
 skills/
-  discover/
-    SKILL.md                       # /sidekick:discover logic and hard rules
+  discover-workflows/
+    SKILL.md                       # /discover-workflows logic and hard rules
     catalog.md                     # curated workflow catalog (7 entries)
-  install/
-    SKILL.md                       # /sidekick:install logic and hard rules
+  install-workflow/
+    SKILL.md                       # /install-workflow logic and hard rules
     auth.md                        # OAuth vs. API-key decision tree
 
 .github/
@@ -152,6 +154,6 @@ Changes to `skills/*/SKILL.md` take effect on the next Claude Code session reloa
 
 Once v0.1 is scope-locked:
 
-1. ~~Fill in `skills/discover/catalog.md` with curated entries~~ — catalog populated with 7 entries.
+1. ~~Fill in `skills/discover-workflows/catalog.md` with curated entries~~ — catalog populated with 7 entries.
 2. ~~Update `plugin.json` with the final author name and repository URL.~~ — updated in PR #7 with `verkyyi` author and repository URLs.
 3. Submit via `claude.ai/settings/plugins/submit` or `platform.claude.com/plugins/submit`.

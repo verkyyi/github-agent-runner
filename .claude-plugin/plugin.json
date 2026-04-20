@@ -1,5 +1,5 @@
 {
-  "name": "sidekick",
+  "name": "github-agent-runner",
   "description": "Conversational discovery and install of GitHub agent workflows (gh-aw), with auth setup that respects your Claude subscription.",
   "version": "0.1.0",
   "author": {
