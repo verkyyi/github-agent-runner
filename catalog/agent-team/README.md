@@ -34,7 +34,7 @@ Each agent finishes its work by **emitting a `dispatch-workflow` safe-output** n
    │ implementer-agent  │──────────────────────────────────────────────┐
    └────────────────────┘                                              │
                                                                        ▼
-   ┌────────────────┐  approve ► state:done (stop — human merges the PR)
+   ┌────────────────┐  approve ► state:done + pipeline-summary on issue (stop — human merges the PR)
    │ reviewer-agent │  block   ► state:blocked (stop — human resolves)
    └────────────────┘  kickback► dispatch implementer-agent (
                                      issue_number, pr_number,
@@ -55,7 +55,27 @@ Agents communicate their work product via fenced HTML-comment blocks, which down
 <!-- /agent-team:spec -->
 ```
 
-Sections: `spec`, `plan`, `review`. Each carries the `iteration` at the time it was produced. The reviewer increments `iteration` on kickback when it dispatches the implementer. When any agent sees `iteration > 3` as its input, it flips the issue to `state:blocked` and stops instead of continuing.
+Sections: `spec`, `plan`, `review`, `summary`. Each carries the `iteration` at the time it was produced. The reviewer increments `iteration` on kickback when it dispatches the implementer. When any agent sees `iteration > 3` as its input, it flips the issue to `state:blocked` and stops instead of continuing.
+
+The `summary` block is special: the reviewer posts it on the **issue** (not the PR) on approval only, giving humans a single jump-off point with links to every stage's Actions run and the PR number. It is never produced on kickback or block paths.
+
+```markdown
+<!-- agent-team:summary issue=N -->
+## ✅ Pipeline complete — ready for human review
+
+| Stage | Run |
+|---|---|
+| Spec | [link] |
+| Plan | [link] |
+| Impl | [link] |
+| Review | [link] |
+
+**PR**: #N — draft, awaiting your merge.
+**Iterations**: N (kickback rounds before approval).
+
+🤖 agent-team / reviewer
+<!-- /agent-team:summary -->
+```
 
 ## Files
 
@@ -64,7 +84,7 @@ Sections: `spec`, `plan`, `review`. Each carries the `iteration` at the time it 
 | `spec-agent.md` | `issues.labeled` with `agent-team` (fresh issue) | `planner-agent` (issue_number, iteration=1) |
 | `planner-agent.md` | `workflow_dispatch` (issue_number, iteration) | `implementer-agent` (issue_number, iteration) |
 | `implementer-agent.md` | `workflow_dispatch` (issue_number, iteration, pr_number?) | `reviewer-agent` (issue_number, pr_number, iteration) |
-| `reviewer-agent.md` | `workflow_dispatch` (pr_number, issue_number, iteration) | `implementer-agent` on kickback (iteration+1), else nothing |
+| `reviewer-agent.md` | `workflow_dispatch` (pr_number, issue_number, iteration) | `implementer-agent` on kickback (iteration+1); on approve: posts pipeline-summary on issue, else nothing |
 
 ## Install
 
@@ -99,7 +119,7 @@ Then apply the OAuth token tweak to each `.lock.yml` per [`skills/install-workfl
 
 1. Open an issue describing what you want built.
 2. Add the single label `agent-team`.
-3. Watch the thread. Each role posts its contribution as a comment; the implementer opens a draft PR that closes the issue when merged.
+3. Watch the thread. Each role posts its contribution as a comment; the implementer opens a draft PR that closes the issue when merged. On approval, the reviewer posts a final pipeline-summary comment on the issue with links to every stage's Actions run — your single jump-off point before merging.
 4. Human override at any time: add `state:blocked` to halt, edit a comment to steer the next agent, or manually `gh workflow run` a specific role to retry a stuck stage.
 5. **Retrying a blocked task**: clear `state:blocked`, then re-add `agent-team`. Spec-agent treats it as a fresh dispatch (because the state:* labels are gone and the spec markers are already satisfied — actually: to redo from scratch, also delete the prior spec comment).
 
