@@ -2,14 +2,16 @@
 engine: claude
 description: |
   This workflow keeps docs synchronized with code changes.
-  Triggered on every push to main, it analyzes diffs to identify changed entities and
-  updates corresponding documentation. Maintains consistent style (precise, active voice,
-  plain English), ensures single source of truth, and creates draft PRs with documentation
-  updates. Supports documentation-as-code philosophy.
+  Runs once a day (and on manual dispatch) — analyzes recent commits to identify
+  changed entities and updates corresponding documentation. Maintains consistent
+  style (precise, active voice, plain English), ensures single source of truth,
+  and creates draft PRs with documentation updates. Supports documentation-as-code
+  philosophy.
+  Local override: upstream (agentics) fires on every push to main; switched to daily
+  here because burst-commit sessions produced 17+ overlapping drift PRs at once.
 
 on:
-  push:
-    branches: [main]
+  schedule: daily
   workflow_dispatch:
 
 permissions: read-all
