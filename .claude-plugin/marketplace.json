@@ -1,0 +1,20 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "github-agent-runner",
+  "description": "Self-hosted marketplace for the github-agent-runner Claude Code plugin.",
+  "owner": {
+    "name": "verkyyi"
+  },
+  "plugins": [
+    {
+      "name": "github-agent-runner",
+      "description": "Conversational discovery and install of GitHub agent workflows (gh-aw), with auth setup that respects your Claude subscription.",
+      "category": "development",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/verkyyi/github-agent-runner.git"
+      },
+      "homepage": "https://github.com/verkyyi/github-agent-runner"
+    }
+  ]
+}

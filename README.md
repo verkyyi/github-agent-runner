@@ -47,14 +47,14 @@ See [skills/install-workflow/auth.md](skills/install-workflow/auth.md) for the c
 
 ## Quick start
 
-```bash
-# Load the plugin for local development
-git clone https://github.com/verkyyi/github-agent-runner
-cd github-agent-runner
-claude --plugin-dir .
+Inside any Claude Code session, add the self-hosted marketplace and install the plugin:
+
+```
+/plugin marketplace add https://raw.githubusercontent.com/verkyyi/github-agent-runner/main/.claude-plugin/marketplace.json
+/plugin install github-agent-runner
 ```
 
-Then inside Claude Code:
+Then invoke the skills:
 
 ```
 /discover-workflows    # get tailored workflow recommendations for your repo
@@ -62,6 +62,8 @@ Then inside Claude Code:
 ```
 
 Both skill names are unique, so the short form works out-of-the-box. If another installed plugin ever ships the same skill name, prefix with the plugin name to disambiguate: `/github-agent-runner:discover-workflows`.
+
+> Want to hack on the plugin itself? See [Local development](#local-development) below for the `claude --plugin-dir .` workflow.
 
 ## How the skills work
 
