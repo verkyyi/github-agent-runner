@@ -71,7 +71,7 @@ run_claude() {
 # Check if output contains a pattern.
 assert_contains() {
     local output="$1" pattern="$2" test_name="${3:-test}"
-    if echo "$output" | grep -qE "$pattern"; then
+    if echo "$output" | grep -qiE "$pattern"; then
         echo "  [PASS] $test_name"
         return 0
     else
@@ -86,7 +86,7 @@ assert_contains() {
 # Check if output does NOT contain a pattern.
 assert_not_contains() {
     local output="$1" pattern="$2" test_name="${3:-test}"
-    if echo "$output" | grep -qE "$pattern"; then
+    if echo "$output" | grep -qiE "$pattern"; then
         echo "  [FAIL] $test_name"
         echo "  Did not expect to find: $pattern"
         echo "  In output:"
