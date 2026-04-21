@@ -80,7 +80,7 @@ To remove workflows this plugin installed into your target repo:
 
 - `gh aw remove <workflow>` for each installed workflow (deletes both the `.md` source and the compiled `.lock.yml`), then commit the deletion.
 - `gh secret delete CLAUDE_CODE_OAUTH_TOKEN` — or `ANTHROPIC_API_KEY`, whichever path you used — to unset the auth secret.
-- For `agent-team` specifically, also delete the seven labels: `gh label delete agent-team` plus `gh label delete state:<name>` for each of `plan-needed`, `impl-needed`, `review-needed`, `done`, `blocked`, and `in-progress`.
+- For `agent-team` specifically, also delete the seven labels: `gh label delete agent-team`, `gh label delete agent-team:reviewed`, plus `gh label delete state:<name>` for each of `plan-needed`, `impl-needed`, `review-needed`, `done`, and `blocked`.
 
 Nothing else is persisted — the plugin writes only to your target repo (under user approval) and holds no local state outside Claude Code's own plugin directory.
 
@@ -122,6 +122,14 @@ catalog/
 
 `.lock.yml` files are marked `linguist-generated` and `merge=ours` in `.gitattributes` to prevent spurious merge conflicts.
 </details>
+
+## Publishing (maintainers only)
+
+1. Bump `"version"` in `.claude-plugin/plugin.json` and update the `v<version>` status badge near the top of this README (the `test-invariants` check enforces they stay in sync).
+2. Commit to `main`.
+3. Create and push a tag: `git tag v<version> && git push origin v<version>`.
+4. Draft a GitHub release from the tag — the release body is the human-readable changelog entry.
+5. The marketplace URL (`https://raw.githubusercontent.com/verkyyi/github-agent-runner/main/.claude-plugin/marketplace.json`) is stable; existing users pick up the new version automatically on next plugin refresh. For new registry listings, follow the submission flows at [claude-plugins.dev](https://claude-plugins.dev) and [ClaudePluginHub](https://claudepluginhub.com).
 
 ## Credits
 
