@@ -13,7 +13,18 @@ on:
 
 permissions: read-all
 
-network: defaults
+network:
+  allowed:
+    - defaults
+    - "autonomee.ai"
+    - "code.claude.com"
+    - "grll.bearblog.dev"
+    - "hn.algolia.com"
+    - "kissapi.ai"
+    - "news.ycombinator.com"
+    - "platform.claude.com"
+    - "support.claude.com"
+    - "wain.blog"
 
 safe-outputs:
   create-discussion:

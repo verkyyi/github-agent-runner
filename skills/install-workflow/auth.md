@@ -2,6 +2,19 @@
 
 How the install-workflow skill picks and applies auth for a gh-aw workflow with `engine: claude`. Validated end-to-end 2026-04-19 against `verkyyi/github-agent-runner` and `verkyyi/agentfolio`.
 
+## This is Anthropic's documented path — not a workaround
+
+The OAuth path below uses `claude setup-token` to mint a long-lived `sk-ant-oat01-*` token and runs it through the official `@anthropic-ai/claude-code` CLI. This is the pattern Anthropic documents at [code.claude.com/docs/en/github-actions](https://code.claude.com/docs/en/github-actions) and explicitly permits under their Consumer Terms (updated 2026-02-20): subscription OAuth tokens are forbidden in *third-party* products, but the official CLI is on the permitted allow-list alongside Claude.ai and Claude Desktop.
+
+What remains is a **gh-aw-specific implementation detail**: gh-aw's sandbox proxy (`awf`) strips subscription-scoped environment variables by default via `--exclude-env ANTHROPIC_API_KEY`. The post-compile tweak in Step 3 preserves that carve-out while letting `CLAUDE_CODE_OAUTH_TOKEN` through. It adjusts how gh-aw's own sandbox handles env vars — it does **not** circumvent Anthropic policy.
+
+Two distinct concerns, often conflated:
+
+| Concern | Status |
+|---|---|
+| *Can a Claude subscription OAuth token be used in GitHub Actions via the official CLI?* | **Yes, documented and permitted** by Anthropic. |
+| *Does gh-aw natively plumb `CLAUDE_CODE_OAUTH_TOKEN` through its sandbox proxy without a post-compile tweak?* | **Not yet** (tracked in gh-aw issue #16498). The tweak below bridges this. |
+
 ## Decide the path
 
 Ask the user (once per target repo):
@@ -101,15 +114,19 @@ API-key path means every workflow run bills tokens. Before committing, help the 
 - Conservative `timeout-minutes:` at workflow level
 - Budget alert workflow (future — not v0.1)
 
-## Why this works (ToS boundary)
+## Why this is the official path (ToS specifics)
 
-gh-aw doesn't call Anthropic's Messages API directly. Its compiled `.lock.yml` shells out to the official `@anthropic-ai/claude-code` npm CLI (version pinned in the lock, e.g. `2.1.98`). The CLI is on Anthropic's OAuth-eligible product allow-list alongside Claude.ai, Claude Desktop, and Claude Cowork (Anthropic Consumer Terms, "Except when you are accessing our Services via an Anthropic API Key **or where we otherwise explicitly permit it**"). Running the official CLI with a subscription OAuth token inside a GitHub Actions runner is the same pattern documented at `code.claude.com/docs/en/github-actions`.
+gh-aw doesn't call Anthropic's Messages API directly. Its compiled `.lock.yml` shells out to the official `@anthropic-ai/claude-code` npm CLI (version pinned in the lock, e.g. `2.1.98`). The CLI is on Anthropic's OAuth-eligible product allow-list alongside Claude.ai, Claude Desktop, and Claude Cowork (Anthropic Consumer Terms, "Except when you are accessing our Services via an Anthropic API Key **or where we otherwise explicitly permit it**"). Running the official CLI with a subscription OAuth token inside a GitHub Actions runner is the same pattern Anthropic documents at [code.claude.com/docs/en/github-actions](https://code.claude.com/docs/en/github-actions).
 
 **Boundary that matters**: do NOT use the OAuth token to call the Messages API directly (`sk-ant-oat01-*` is rejected there per `anthropics/claude-code#37205`). The official CLI is the required intermediary.
 
-## Known upstream trajectory (for reference)
+## Upstream trajectory — what's a proxy issue vs. a policy issue
 
-gh-aw had native `CLAUDE_CODE_OAUTH_TOKEN` support via `AlternativeSecrets` until PR #16757 removed it on 2026-02-19. Issue #16498 tracks re-introduction; maintainer @dsyme left the door open for "legitimate automated OIDC techniques." PR #20473 (merged 2026-03-11) added `AuthDefinition` scaffolding that could host a proper OAuth re-enablement. Until then, the post-compile tweak is the known-working path.
+The two concerns separated at the top of this document have different trajectories:
+
+**Anthropic-side (policy)**: stable. The February 2026 ToS update locked in what's permitted (official CLI with subscription OAuth) and what isn't (third-party products with subscription OAuth). No indication of further tightening that affects the official-CLI path.
+
+**gh-aw-side (proxy implementation)**: open. gh-aw had native `CLAUDE_CODE_OAUTH_TOKEN` support via `AlternativeSecrets` until PR #16757 removed it on 2026-02-19. Issue #16498 tracks re-introduction; maintainer @dsyme left the door open for "legitimate automated OIDC techniques." PR #20473 (merged 2026-03-11) added `AuthDefinition` scaffolding that could host proper OAuth re-enablement. Until that lands, the post-compile tweak bridges gh-aw's sandbox proxy for us — no Anthropic-level change required.
 
 ## Failure modes and what they mean
 
