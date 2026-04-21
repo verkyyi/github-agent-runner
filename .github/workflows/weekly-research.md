@@ -65,6 +65,7 @@ Do a deep research investigation anchored to the areas listed in "Context" above
 
 - Read selections of the latest code, issues, PRs, and recent commits for this repo to understand where the plugin stands.
 - Read latest trends and news from the software-industry sources on the Web, focused on the six anchors. Do not report on unrelated tech trends (e.g., generic ML news, unrelated language/framework releases) unless they directly connect.
+- Before asserting any repo-specific claim (e.g. "this repo's workflows use X", "our implementation calls Y"), grep this repo to verify and cite file:line. Do not extrapolate from upstream renames or deprecations without first checking whether the local code uses the affected identifier.
 
 Create a new GitHub discussion with title starting with "${{ github.workflow }}" containing a markdown report with:
 
