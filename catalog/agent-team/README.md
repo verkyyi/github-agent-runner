@@ -4,6 +4,10 @@ A four-workflow pattern for a spec → plan → implement → review pipeline on
 
 > **Status**: reference pattern. Templates only — `.lock.yml` files are generated when you install into a target repo.
 
+## See it in action
+
+[verkyyi/agent-team-playground#5](https://github.com/verkyyi/agent-team-playground/pull/5) — a complete spec → plan → impl → review run on a toy `greet()` function. The issue thread shows all four agents' comments, every workflow-run link, and the reviewer's approve verdict. Useful reference for what the happy-path output looks like before installing into a real repo.
+
 ## When to use this
 
 You want multiple specialized agents (not one mega-prompt) collaborating on a task, with a visible audit trail in the issue thread and human override at any step.

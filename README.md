@@ -65,6 +65,25 @@ Beyond the one-workflow-per-job templates above, this repo ships reference patte
 
 - **[agent-team](catalog/agent-team/README.md)** — four roles (spec → plan → impl → review) coordinating through structured comment blocks and a small internal label state machine. Install all four in one pass with `/install-agent-team`; dispatch tasks by opening an issue and adding a single `agent-team` label. Use when you want visible handoffs, human override between steps, and an audit trail per task.
 
+  **See it in action**: [verkyyi/agent-team-playground#5](https://github.com/verkyyi/agent-team-playground/pull/5) — a complete spec → plan → impl → review run on a toy `greet()` function, with all four workflow runs linked and the reviewer's approve comment posted back on the issue thread.
+
+## Uninstall
+
+Remove the plugin from Claude Code:
+
+```
+/plugin uninstall github-agent-runner
+/plugin marketplace remove github-agent-runner   # if you added the marketplace
+```
+
+To remove workflows this plugin installed into your target repo:
+
+- `gh aw remove <workflow>` for each installed workflow (deletes both the `.md` source and the compiled `.lock.yml`), then commit the deletion.
+- `gh secret delete CLAUDE_CODE_OAUTH_TOKEN` — or `ANTHROPIC_API_KEY`, whichever path you used — to unset the auth secret.
+- For `agent-team` specifically, also delete the seven labels: `gh label delete agent-team` plus `gh label delete state:<name>` for each of `plan-needed`, `impl-needed`, `review-needed`, `done`, `blocked`, and `in-progress`.
+
+Nothing else is persisted — the plugin writes only to your target repo (under user approval) and holds no local state outside Claude Code's own plugin directory.
+
 ## Local development
 
 ```bash
