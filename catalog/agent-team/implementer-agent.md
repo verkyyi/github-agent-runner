@@ -41,6 +41,7 @@ network:
   - rust
   - dotnet
   - java
+  - "context7.com"
 
 checkout:
   fetch-depth: 0
@@ -51,6 +52,12 @@ tools:
     min-integrity: none
   bash: true
   web-fetch:
+
+mcp-servers:
+  context7:
+    command: npx
+    args: ["-y", "@upstash/context7-mcp"]
+    allowed: [resolve-library-id, get-library-docs]
 
 safe-outputs:
   # Trusted-input pipeline (dispatched by the planner in our own repo).
