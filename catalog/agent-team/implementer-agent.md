@@ -85,10 +85,11 @@ safe-outputs:
 
 You are the **implementer** in a four-role agent-team pipeline. The planner (or the reviewer, on kickback) just dispatched you. Your job: implement the plan, open or update a draft PR, then dispatch the reviewer.
 
-Resolved dispatch inputs:
+Dispatch inputs:
 - `issue_number`: `${{ github.event.inputs.issue_number }}`
 - `iteration`: `${{ github.event.inputs.iteration }}`
-- `pr_number`: `${{ github.event.inputs.pr_number }}`
+- `pr_number` (optional): `${{ github.event.inputs.pr_number }}`
+  - If this is blank or still the literal `${{ github.event.inputs.pr_number }}`, treat it as not set.
 
 ## Required input contract (do this before anything else)
 
@@ -116,8 +117,8 @@ If `${{ github.event.inputs.iteration }}` is greater than 3:
    If spec or plan is missing: add `state:blocked`, post `🛑 agent-team: missing spec or plan.` on the issue, stop (do not dispatch).
 
 2. **Pick the branch**:
-   - If `${{ github.event.inputs.pr_number }}` is empty → create a new branch: `agent-team/issue-${{ github.event.inputs.issue_number }}-<short-slug>`.
-   - If `${{ github.event.inputs.pr_number }}` is set → check out the existing PR's branch (via `gh pr view ${{ github.event.inputs.pr_number }} --json headRefName`) and push updates to it.
+   - If `pr_number` is blank or still the literal `${{ github.event.inputs.pr_number }}` → create a new branch: `agent-team/issue-${{ github.event.inputs.issue_number }}-<short-slug>`.
+   - If `pr_number` is a real PR number → check out the existing PR's branch (via `gh pr view ${{ github.event.inputs.pr_number }} --json headRefName`) and push updates to it.
 
 3. Implement **only what the plan says** (plus any kickback requested changes). Do not expand scope.
    - **Trust the plan.** The planner already explored the repo, confirmed file paths exist, and identified the exact edits. Do NOT re-read surrounding files to "understand the codebase" or "check for patterns." Read only the files the plan names under `Files to change`, plus `AGENTS.md` / `CLAUDE.md` / `CONTRIBUTING.md` once for convention reminders.
@@ -135,13 +136,13 @@ If `${{ github.event.inputs.iteration }}` is greater than 3:
        - `## Plan reference` — one sentence linking back to the plan comment.
        - `## Test status` — exact commands run and their outcomes (✅ / ❌ / ⚠ skipped with reason).
        - Footer: `🤖 agent-team / implementer`.
-   - **Kickback update** (pr_number was set): use `push-to-pull-request-branch` to push the fix commits to the existing PR. Post a brief comment on the PR summarizing what you changed in response to the review.
+   - **Kickback update** (a real `pr_number` was provided): use `push-to-pull-request-branch` to push the fix commits to the existing PR. Post a brief comment on the PR summarizing what you changed in response to the review.
 
 5. Remove `state:impl-needed` and add `state:review-needed` on the issue (cosmetic — handoff is the dispatch in step 7).
 
 6. Capture the PR number:
    - New PR: the PR number comes from the `create-pull-request` safe output. Use it in step 7.
-   - Kickback: use `${{ github.event.inputs.pr_number }}` as-is.
+   - Kickback: use the resolved `pr_number` from the dispatch input.
 
 7. **Dispatch the reviewer-agent workflow** with:
    - `pr_number`: the number from step 6

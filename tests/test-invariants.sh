@@ -78,6 +78,7 @@ check_required "catalog/agent-team/planner-agent.md" '${{ github.event.inputs.is
 check_required "catalog/agent-team/implementer-agent.md" '${{ github.event.inputs.issue_number }}' "implementer reads workflow_dispatch inputs via documented markdown expression"
 check_required "catalog/agent-team/reviewer-agent.md" '${{ github.event.inputs.pr_number }}' "reviewer reads workflow_dispatch inputs via documented markdown expression"
 check_required "catalog/agent-team/implementer-agent.md" "Do **not** infer the missing value from labels" "implementer must fail loud instead of label-search fallback"
+check_required "catalog/agent-team/implementer-agent.md" 'If this is blank or still the literal `${{ github.event.inputs.pr_number }}`, treat it as not set.' "implementer treats missing optional pr_number as absent instead of a live template token"
 check_required "catalog/agent-team/README.md" '${{ github.event.inputs.* }}' "README documents the manual-dispatch input contract"
 
 echo ""
