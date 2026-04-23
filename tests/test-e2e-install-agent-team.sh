@@ -3,7 +3,7 @@
 #
 # Unlike test-e2e.sh (which tests an already-installed pipeline), this test
 # verifies the SKILL itself: given a clean repo, does invoking install-agent-team
-# produce the expected end-state (4 compiled lockfiles with OAuth tweak + 7
+# produce the expected end-state (5 compiled lockfiles with OAuth tweak + 7
 # labels + no hand-edits needed)?
 #
 # Usage:
@@ -117,7 +117,7 @@ echo "  Set CLAUDE_CODE_OAUTH_TOKEN"
 # 3. Invoke the skill via claude -p against the repo clone
 echo ""
 echo "-- Invoking /install-agent-team via claude -p --"
-PROMPT="We are in a fresh clone of github repo $FULL. The repo already has CLAUDE_CODE_OAUTH_TOKEN set as a secret (skip the 'claude setup-token' step in your install flow — confirm via gh secret list and proceed). Execute the /install-agent-team skill end-to-end: install all four agent-team workflows, apply the OAuth tweak to every lockfile, create the seven labels, validate. Commit and push all changes to origin/main. Do not pause for confirmations — proceed autonomously. When done, print 'SKILL_E2E_DONE' on its own line."
+PROMPT="We are in a fresh clone of github repo $FULL. The repo already has CLAUDE_CODE_OAUTH_TOKEN set as a secret (skip the 'claude setup-token' step in your install flow — confirm via gh secret list and proceed). Execute the /install-agent-team skill end-to-end: install all five agent-team workflows (including the sweep), apply the OAuth tweak to every lockfile, create the seven labels, validate. Commit and push all changes to origin/main. Do not pause for confirmations — proceed autonomously. When done, print 'SKILL_E2E_DONE' on its own line."
 
 cd "$WORKDIR/repo"
 claude -p "$PROMPT" \
@@ -135,7 +135,7 @@ rm -rf "$WORKDIR/verify"
 git clone "https://github.com/$FULL.git" "$WORKDIR/verify" --quiet
 cd "$WORKDIR/verify"
 
-for wf in spec-agent planner-agent implementer-agent reviewer-agent; do
+for wf in spec-agent planner-agent implementer-agent reviewer-agent sweep-agent; do
   [ -f ".github/workflows/${wf}.md" ] && pass "workflow source committed: ${wf}.md" \
     || fail "missing workflow source: ${wf}.md"
   [ -f ".github/workflows/${wf}.lock.yml" ] && pass "lockfile committed: ${wf}.lock.yml" \
@@ -152,6 +152,13 @@ for wf in spec-agent planner-agent implementer-agent reviewer-agent; do
 done
 
 cd - >/dev/null
+
+# Sweep workflow registered with Actions
+if gh workflow list --repo "$FULL" --json name,path --jq '.[] | select(.path | contains("sweep-agent")) | .name' | grep -q .; then
+  pass "sweep-agent workflow registered with Actions"
+else
+  fail "sweep-agent workflow not registered"
+fi
 
 # Labels
 want_labels=(agent-team state:plan-needed state:impl-needed state:review-needed state:done state:blocked agent-team:reviewed)
