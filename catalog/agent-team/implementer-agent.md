@@ -115,6 +115,8 @@ Any other value → add `state:blocked` to `inputs.issue_number`, post `🛑 age
 
 ## Iteration guard (impl mode only)
 
+Skip this section entirely if `inputs.mode == "rebase"` — a rebase is not a review attempt.
+
 If `inputs.iteration` is greater than 3:
 - Add `state:blocked` to issue `inputs.issue_number`.
 - Post one comment on that issue: `🛑 agent-team: max iterations reached at impl stage.`
@@ -133,7 +135,7 @@ The iteration guard does not apply to this mode — a rebase is not a review att
 **Steps**:
 
 1. Check out the PR branch:
-   - `gh pr view <inputs.pr_number> --json headRefName,state,isDraft` — confirm the PR is open and draft. If closed or merged, stop silently (nothing to do).
+   - `gh pr view <inputs.pr_number> --json headRefName,state,isDraft` — confirm the PR is open and draft. Stop silently (post no comment) if any of: PR is closed, merged, or `isDraft: false` (a human promoted it out of draft; they control it from here).
    - `git fetch origin <branch> && git checkout <branch>`
 
 2. Fetch `main`:
@@ -146,7 +148,7 @@ The iteration guard does not apply to this mode — a rebase is not a review att
 
 4. Run the project's test command once. Use the same test-command detection as `impl` mode (read `package.json` / `Makefile` / CI files). If no test command is detectable, skip and note that in step 5.
    - Tests pass → continue to step 5.
-   - Tests fail → escalate per "Conflict resolution" escalation format, stop.
+   - Tests fail → the rebase itself is already complete, so the CR section's `git rebase --abort` does not apply. Run `git reset --hard ORIG_HEAD` to restore the pre-rebase state, then escalate per "Conflict resolution" escalation format, stop.
 
 5. Push:
    - `git push --force-with-lease origin HEAD:<branch>`
