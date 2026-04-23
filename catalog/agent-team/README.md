@@ -104,14 +104,25 @@ Then apply the OAuth token tweak to each `.lock.yml` per [`skills/install-workfl
 1. Open an issue describing what you want built.
 2. Add the single label `agent-team`.
 3. Watch the thread. Each role posts its contribution as a comment; the implementer opens a draft PR that closes the issue when merged.
-4. Human override at any time: add `state:blocked` to halt, edit a comment to steer the next agent, or manually `gh workflow run` a specific role to retry a stuck stage. Manual dispatches must pass the required `workflow_dispatch` inputs, and the downstream workflow markdown must read them via `${{ github.event.inputs.* }}`.
-5. **Retrying a blocked task**: clear `state:blocked`, then re-add `agent-team`. Spec-agent treats it as a fresh dispatch (because the state:* labels are gone and the spec markers are already satisfied — actually: to redo from scratch, also delete the prior spec comment).
+4. Human override at any time: add `state:blocked` to halt, edit a comment to steer the next agent, or manually `gh workflow run` a specific role to retry a stuck stage. When dispatching manually, pass all required inputs — `issue_number` is always required; `iteration` defaults to `"1"` if omitted; `pr_number` is only required for the reviewer and when re-dispatching the implementer on a kickback (pass the existing PR number). Agents verify required inputs before doing any other work and fail loudly if they are missing or unresolved.
+5. **Retrying a blocked task**: recovery depends on why the task blocked:
+   - **Input propagation failure** (comment reads `🛑 agent-team: workflow_dispatch inputs were not propagated`): the chain stalled mid-run because a dispatch did not carry inputs through. Clear `state:blocked`, then re-dispatch the blocked workflow manually — do **not** re-add the `agent-team` label, which would re-run spec from scratch:
+     ```bash
+     gh workflow run planner-agent.yml     -f issue_number=<N> -f iteration=<N>
+     gh workflow run implementer-agent.yml -f issue_number=<N> -f iteration=<N> [-f pr_number=<N>]
+     gh workflow run reviewer-agent.yml    -f pr_number=<N> -f issue_number=<N> -f iteration=<N>
+     ```
+   - **All other blocks**: clear `state:blocked`, then re-add `agent-team`. Spec-agent treats it as a fresh dispatch. To redo from scratch, also delete the prior spec comment.
 
 ## Limits and gotchas
 
 - **Concurrency**: each workflow uses `concurrency: group: agent-team-issue-${issue_number}` so only one role runs at a time per issue.
 - **Max iterations**: default 3 (reviewer kickback → implementer). The counter lives on the `iteration` input passed through the dispatch chain, bumped exclusively by the reviewer on kickback.
-- **Input propagation**: planner / implementer / reviewer must fail loudly if required `workflow_dispatch` inputs are missing. Do not rely on label search or recent-activity inference as a fallback.
+- **Input propagation**: planner, implementer, and reviewer each check their required `workflow_dispatch` inputs before doing any other work. If a required input is empty, whitespace-only, or still an unresolved template literal (e.g. `${{ github.event.inputs.issue_number }}`):
+  - `issue_number` present → agent adds `state:blocked` and posts: `🛑 agent-team: workflow_dispatch inputs were not propagated. Re-dispatch with valid inputs.`
+  - `issue_number` absent → agent calls `missing_data` / `report_incomplete` and stops.
+
+  The implementer also treats an unresolved `pr_number` literal as absent — it creates a new branch rather than pushing to an existing PR. Never infer missing values from label state or recent activity.
 - **Non-UI only**: no screenshot capture. Reviewer validates via tests/CI status + reading the diff.
 - **Cost**: a single task can easily spend 4× the tokens of a monolithic workflow. Set `timeout-minutes` conservatively and monitor the first few runs.
 - **No auto-merge**: the reviewer approves but never merges. Humans merge.
