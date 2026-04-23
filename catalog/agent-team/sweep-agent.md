@@ -38,9 +38,6 @@ tools:
 
 safe-outputs:
   threat-detection: false
-  add-comment:
-    max: 1
-    target: "*"
   dispatch-workflow:
     workflows: [implementer-agent]
     max: 20
@@ -52,8 +49,10 @@ You are the **sweep** for the agent-team pipeline. Your job: find open draft PRs
 
 ## Steps
 
-1. List candidate PRs:
+1. Fetch `main` once and list candidate PRs:
    ```
+   git fetch origin main --quiet
+
    gh pr list --label agent-team:pr --state open --draft \
      --json number,headRefName,headRefOid,body --limit 50
    ```
@@ -64,7 +63,6 @@ You are the **sweep** for the agent-team pipeline. Your job: find open draft PRs
 
    b. Check if the PR is behind `main`:
       ```
-      git fetch origin main --quiet
       git merge-base --is-ancestor origin/main <headRefOid>
       ```
       - Exit code `0` → PR is current, skip it.
@@ -78,12 +76,11 @@ You are the **sweep** for the agent-team pipeline. Your job: find open draft PRs
         - `iteration`: `"1"` (rebase mode bypasses the iteration guard; any value works)
         - `mode`: `"rebase"`
 
-3. After the loop, if at least one dispatch was emitted, post one summary comment on the **repository's dashboard issue** (optional — only if a dashboard issue is configured; otherwise skip). Default: post no comment. The dispatched runs' logs are the audit trail.
+3. After the loop, post no comment. The dispatched runs' logs (visible in the Actions tab, linked from each dispatched workflow run) are the audit trail.
 
 ## Rules
 
 - Sweep never edits code, never rebases itself, never dispatches anything except the implementer in `rebase` mode.
 - If `gh pr list` returns zero PRs, stop silently — no comment, no dispatch.
 - If more than 20 PRs are behind (unusually large), dispatch the first 20 only. The next sweep run (6h later) picks up the rest. Prevents dispatch-workflow cap from erroring out.
-- Sweep is idempotent — running it back-to-back produces zero extra dispatches (the second run sees all PRs current).
-- Footer comment (only if one is posted): `🤖 agent-team / sweep`.
+- Sweep is re-entrant safe — back-to-back dispatches of the same PR produce at most one actual rebase push. If two sweeps overlap before the first's dispatched rebases complete, the second may re-dispatch; the implementer's rebase-mode ancestry check then exits silently with no push.
