@@ -24,7 +24,7 @@ The result: the user dispatches a task by adding a single `agent-team` label to 
 
 ### 1. Explain what's about to happen
 
-One paragraph: five workflows will be added (four pipeline roles + a sweep that runs every 6 hours to keep PRs rebased), one auth secret will be set, seven labels will be created, nothing runs until the user opens an issue and adds `agent-team`. Ask for explicit confirmation to proceed. The user must opt in — workflows run on push.
+One paragraph: five workflows will be added (four pipeline roles + a sweep that runs every 6 hours to keep PRs rebased), one auth secret will be set, eight labels will be created, nothing runs until the user opens an issue and adds `agent-team`. Ask for explicit confirmation to proceed. The user must opt in — workflows run on push.
 
 ### 2. Preflight
 
@@ -73,6 +73,7 @@ Create these labels (idempotent — ignore "already exists" errors):
 
 ```bash
 gh label create agent-team              --color 7C3AED --description "Opt-in marker for the agent-team pipeline" --force
+gh label create agent-team:pr           --color 8B5CF6 --description "agent-team: PR tag for sweep enumeration" --force
 gh label create state:plan-needed       --color FEF08A --description "agent-team: ready for the planner" --force
 gh label create state:impl-needed       --color FCD34D --description "agent-team: ready for the implementer" --force
 gh label create state:review-needed     --color FDBA74 --description "agent-team: ready for the reviewer" --force
@@ -81,7 +82,7 @@ gh label create state:blocked           --color F87171 --description "agent-team
 gh label create agent-team:reviewed     --color A7F3D0 --description "agent-team: PR has been reviewed" --force
 ```
 
-(The implementer also adds an `agent-team` label to the PR it opens. Same label as the issue entry — one label, two roles: opt-in on issues, reviewer trigger on PRs.)
+(The implementer applies both `agent-team` and `agent-team:pr` labels to PRs it opens. `agent-team` marks it as belonging to the pipeline; `agent-team:pr` is what the sweep filters on to find draft PRs needing rebase.)
 
 ### 7. Validate
 
@@ -98,7 +99,7 @@ Show the user, in this order:
 - Five files added under `.github/workflows/` (name each `.md` + `.lock.yml` pair)
 - Secret configured (name only, never value) or reused
 - Tweak applied to N lock files (or "skipped — API-key path")
-- Seven labels created (or "N already existed, skipped")
+- Eight labels created (or "N already existed, skipped")
 - **How to dispatch a task**: *"Open an issue describing what you want built. Add the `agent-team` label. Done."*
 - Reminder: `gh aw compile` reverts the OAuth tweak. Re-apply on every recompile. `gh aw validate` is safe.
 

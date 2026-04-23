@@ -3,7 +3,7 @@
 #
 # Unlike test-e2e.sh (which tests an already-installed pipeline), this test
 # verifies the SKILL itself: given a clean repo, does invoking install-agent-team
-# produce the expected end-state (5 compiled lockfiles with OAuth tweak + 7
+# produce the expected end-state (5 compiled lockfiles with OAuth tweak + 8
 # labels + no hand-edits needed)?
 #
 # Usage:
@@ -117,7 +117,7 @@ echo "  Set CLAUDE_CODE_OAUTH_TOKEN"
 # 3. Invoke the skill via claude -p against the repo clone
 echo ""
 echo "-- Invoking /install-agent-team via claude -p --"
-PROMPT="We are in a fresh clone of github repo $FULL. The repo already has CLAUDE_CODE_OAUTH_TOKEN set as a secret (skip the 'claude setup-token' step in your install flow — confirm via gh secret list and proceed). Execute the /install-agent-team skill end-to-end: install all five agent-team workflows (including the sweep), apply the OAuth tweak to every lockfile, create the seven labels, validate. Commit and push all changes to origin/main. Do not pause for confirmations — proceed autonomously. When done, print 'SKILL_E2E_DONE' on its own line."
+PROMPT="We are in a fresh clone of github repo $FULL. The repo already has CLAUDE_CODE_OAUTH_TOKEN set as a secret (skip the 'claude setup-token' step in your install flow — confirm via gh secret list and proceed). Execute the /install-agent-team skill end-to-end: install all five agent-team workflows (including the sweep), apply the OAuth tweak to every lockfile, create the eight labels, validate. Commit and push all changes to origin/main. Do not pause for confirmations — proceed autonomously. When done, print 'SKILL_E2E_DONE' on its own line."
 
 cd "$WORKDIR/repo"
 claude -p "$PROMPT" \
@@ -161,7 +161,7 @@ else
 fi
 
 # Labels
-want_labels=(agent-team state:plan-needed state:impl-needed state:review-needed state:done state:blocked agent-team:reviewed)
+want_labels=(agent-team agent-team:pr state:plan-needed state:impl-needed state:review-needed state:done state:blocked agent-team:reviewed)
 have=$(gh label list --repo "$FULL" --limit 50 --json name --jq '[.[].name] | join(",")')
 for lbl in "${want_labels[@]}"; do
   echo "$have" | grep -q "$lbl" && pass "label created: $lbl" || fail "label missing: $lbl"

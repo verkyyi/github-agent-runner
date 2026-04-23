@@ -93,7 +93,7 @@ Use the bundled skill — it's the supported path:
 /install-agent-team
 ```
 
-One flow installs all five workflows, wires auth once, applies the OAuth tweak to every lockfile, and creates the seven labels. See [`skills/install-agent-team/SKILL.md`](../../skills/install-agent-team/SKILL.md).
+One flow installs all five workflows, wires auth once, applies the OAuth tweak to every lockfile, and creates the eight labels. See [`skills/install-agent-team/SKILL.md`](../../skills/install-agent-team/SKILL.md).
 
 <details>
 <summary>Manual install (advanced)</summary>
@@ -113,7 +113,7 @@ Then apply the OAuth token tweak to each `.lock.yml` per [`skills/install-workfl
 
 - Repo Actions settings: **Read and write** permissions + **Allow GitHub Actions to create and approve pull requests**.
 - Either `CLAUDE_CODE_OAUTH_TOKEN` (subscription) or `ANTHROPIC_API_KEY` repo secret.
-- Labels (`agent-team`, `state:plan-needed`, `state:impl-needed`, `state:review-needed`, `state:done`, `state:blocked`, `agent-team:reviewed`) — the install skill creates them.
+- Labels (`agent-team`, `agent-team:pr`, `state:plan-needed`, `state:impl-needed`, `state:review-needed`, `state:done`, `state:blocked`, `agent-team:reviewed`) — the install skill creates them.
 
 ## Kicking off a task
 

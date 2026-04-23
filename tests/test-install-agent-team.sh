@@ -62,8 +62,8 @@ assert_contains "$output" "lock\\.yml|\\.lock\\.yml|lockfile" "References the lo
 echo ""
 
 # Test 5: Label creation is part of install.
-echo "Test 5: All seven labels created by the installer (entry + state:* + reviewed)..."
-output=$(run_claude "Load the install-agent-team skill. Does it create the required GitHub labels as part of installation, or does it expect the user to create them? List the label names it creates (per the skill's 'Create the labels' step) — there should be seven." 180)
+echo "Test 5: All eight labels created by the installer (entry + pr tag + state:* + reviewed)..."
+output=$(run_claude "Load the install-agent-team skill. Does it create the required GitHub labels as part of installation, or does it expect the user to create them? List the label names it creates (per the skill's 'Create the labels' step) — there should be eight." 180)
 assert_contains "$output" "creates?|gh label create|sets? up" "Installer creates labels" || exit 1
 assert_contains "$output" "agent-team" "Creates the agent-team entry label" || exit 1
 assert_contains "$output" "state:plan-needed|state:impl-needed|state:review-needed" "Creates the state:* labels" || exit 1
