@@ -113,13 +113,58 @@ Check `inputs.mode`:
 
 Any other value → add `state:blocked` to `inputs.issue_number`, post `🛑 agent-team: unknown implementer mode "<value>".` on the issue, stop.
 
-## Iteration guard (do this first)
+## Iteration guard (impl mode only)
 
 If `inputs.iteration` is greater than 3:
 - Add `state:blocked` to issue `inputs.issue_number`.
 - Post one comment on that issue: `🛑 agent-team: max iterations reached at impl stage.`
 - Do **not** dispatch the reviewer.
 - Stop.
+
+## Rebase-only mode
+
+Triggered when `inputs.mode == "rebase"`. Purpose: keep an existing PR current with `main` without doing any implementation work. Called by the sweep workflow (and can be invoked manually via `gh workflow run`).
+
+The iteration guard does not apply to this mode — a rebase is not a review attempt.
+
+**Preconditions** (fail fast):
+- `inputs.pr_number` must be set. If empty, add `state:blocked` to `inputs.issue_number`, comment `🛑 agent-team / rebase: mode=rebase requires pr_number.`, stop.
+
+**Steps**:
+
+1. Check out the PR branch:
+   - `gh pr view <inputs.pr_number> --json headRefName,state,isDraft` — confirm the PR is open and draft. If closed or merged, stop silently (nothing to do).
+   - `git fetch origin <branch> && git checkout <branch>`
+
+2. Fetch `main`:
+   - `git fetch origin main`
+   - If `main` is already an ancestor of `HEAD` (`git merge-base --is-ancestor origin/main HEAD`), the PR is current. Stop silently — post no comment.
+
+3. Rebase:
+   - `git rebase origin/main`.
+   - On conflicts → follow the "Conflict resolution" section below. Clean rebase or successful mechanical resolve → continue to step 4.
+
+4. Run the project's test command once. Use the same test-command detection as `impl` mode (read `package.json` / `Makefile` / CI files). If no test command is detectable, skip and note that in step 5.
+   - Tests pass → continue to step 5.
+   - Tests fail → escalate per "Conflict resolution" escalation format, stop.
+
+5. Push:
+   - `git push --force-with-lease origin HEAD:<branch>`
+   - Post one comment on the PR — body:
+     ```
+     🤖 agent-team / rebase: rebased onto main at <short-sha>.
+
+     - Rebase: <clean | resolved N mechanical conflict(s) in <files>>
+     - Tests: <✅ passed | ⚠ skipped — no test command detected>
+     ```
+
+6. Stop. **Do not dispatch the reviewer.** Rebase mode is terminal.
+
+**Rules for this mode**:
+- Never read the spec or plan. This mode addresses no requirements changes.
+- Never dispatch downstream. The PR stays in whatever state it was in (`state:review-needed`, `state:done`, etc.) — a rebase doesn't reset review.
+- Never touch files beyond what `git rebase` modifies. No spec-driven edits.
+- Force-push uses `--force-with-lease` so a concurrent human push isn't clobbered.
 
 ## Normal path
 
