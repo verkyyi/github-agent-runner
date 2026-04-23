@@ -3,3 +3,6 @@ node_modules/
 *.log
 .env
 .env.local
+
+# gh aw compile artifacts in catalog sources (local dev only)
+catalog/**/*.lock.yml

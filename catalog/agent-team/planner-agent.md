@@ -29,13 +29,23 @@ permissions:
   contents: read
   issues: read
 
-network: defaults
+network:
+  allowed:
+    - defaults
+    - node
+    - "context7.com"
 
 tools:
   github:
     toolsets: [default]
     min-integrity: none
   bash: true
+
+mcp-servers:
+  context7:
+    command: npx
+    args: ["-y", "@upstash/context7-mcp"]
+    allowed: [resolve-library-id, get-library-docs]
 
 safe-outputs:
   # Trusted-input pipeline (dispatched by the spec-agent in our own repo).
