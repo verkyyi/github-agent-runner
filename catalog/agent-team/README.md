@@ -1,6 +1,6 @@
 # agent-team
 
-A four-workflow pattern for a spec → plan → implement → review pipeline on a single GitHub issue. Each role is a separate gh-aw workflow; they coordinate by **dispatching the next workflow** via gh-aw's `dispatch-workflow` safe-output, passing typed inputs (issue number, iteration counter, optional PR number).
+A five-workflow pattern for a spec → plan → implement → review pipeline on a single GitHub issue, plus a sweep that keeps draft PRs rebased onto `main`. Each role is a separate gh-aw workflow; they coordinate by **dispatching the next workflow** via gh-aw's `dispatch-workflow` safe-output, passing typed inputs (issue number, iteration counter, optional PR number).
 
 > **Status**: reference pattern. Templates only — `.lock.yml` files are generated when you install into a target repo.
 
@@ -44,9 +44,23 @@ Each agent finishes its work by **emitting a `dispatch-workflow` safe-output** n
                                      issue_number, pr_number,
                                      iteration = iteration + 1
                                  )
+
+   (Separately, on a 6-hour cron)
+   ┌─────────────┐  dispatch (issue_number, pr_number, mode=rebase)
+   │ sweep-agent │─────────────────────────► implementer-agent  (for each stale PR)
+   └─────────────┘
 ```
 
 `state:*` labels (`plan-needed`, `impl-needed`, `review-needed`, `done`, `blocked`) are **cosmetic breadcrumbs for humans** — they let the GitHub UI show pipeline progress at a glance. They do **not** drive control flow; the `dispatch-workflow` safe-outputs do.
+
+## Rebase handling
+
+Draft PRs drift out of date as `main` advances. Two mechanisms keep them current, no human action required:
+
+1. **Rebase at start of every implementer run** — `impl` mode begins with `git fetch origin main && git rebase origin/main`. Catches drift within the pipeline (initial impl, kickback cycles).
+2. **Scheduled sweep** — `sweep-agent.md` runs every 6 hours (and on-demand via `workflow_dispatch`). It lists open `agent-team:pr` draft PRs, checks each for `main`-ancestry, and dispatches the implementer in `rebase` mode for any that are behind. Catches the common "PR sat waiting for human merge, main moved" case.
+
+Both paths share the same escalation rule: mechanical conflicts resolve silently; semantic conflicts (overlapping logic, tests fail after resolve) escalate via `state:blocked` with a targeted comment. The human sees the PR only when it's ready to merge or when their judgment is needed.
 
 ## The comment contract
 
@@ -69,6 +83,7 @@ Sections: `spec`, `plan`, `review`. Each carries the `iteration` at the time it 
 | `planner-agent.md` | `workflow_dispatch` (issue_number, iteration) | `implementer-agent` (issue_number, iteration) |
 | `implementer-agent.md` | `workflow_dispatch` (issue_number, iteration, pr_number?) | `reviewer-agent` (issue_number, pr_number, iteration) |
 | `reviewer-agent.md` | `workflow_dispatch` (pr_number, issue_number, iteration) | `implementer-agent` on kickback (iteration+1), else nothing |
+| `sweep-agent.md` | `schedule` (every 6h) + `workflow_dispatch` | `implementer-agent` in `rebase` mode, per stale PR |
 
 ## Install
 
@@ -78,7 +93,7 @@ Use the bundled skill — it's the supported path:
 /install-agent-team
 ```
 
-One flow installs all four workflows, wires auth once, applies the OAuth tweak to every lockfile, and creates the seven labels. See [`skills/install-agent-team/SKILL.md`](../../skills/install-agent-team/SKILL.md).
+One flow installs all five workflows, wires auth once, applies the OAuth tweak to every lockfile, and creates the seven labels. See [`skills/install-agent-team/SKILL.md`](../../skills/install-agent-team/SKILL.md).
 
 <details>
 <summary>Manual install (advanced)</summary>
@@ -88,6 +103,7 @@ gh aw add verkyyi/github-agent-runner/catalog/agent-team/spec-agent.md@main
 gh aw add verkyyi/github-agent-runner/catalog/agent-team/planner-agent.md@main
 gh aw add verkyyi/github-agent-runner/catalog/agent-team/implementer-agent.md@main
 gh aw add verkyyi/github-agent-runner/catalog/agent-team/reviewer-agent.md@main
+gh aw add verkyyi/github-agent-runner/catalog/agent-team/sweep-agent.md@main
 ```
 
 Then apply the OAuth token tweak to each `.lock.yml` per [`skills/install-workflow/auth.md`](../../skills/install-workflow/auth.md), and create the labels (see the skill file for the exact `gh label create` commands).
