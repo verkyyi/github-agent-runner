@@ -24,6 +24,13 @@ on:
         required: false
         type: string
         default: ""
+      mode:
+        description: >-
+          Implementer behavior mode. `impl` (default) runs the normal spec→plan→PR flow and rebases onto main at the start.
+          `rebase` skips spec/plan and only rebases the existing PR onto main, runs tests, and pushes.
+        required: false
+        type: string
+        default: "impl"
 
 concurrency:
   group: agent-team-issue-${{ inputs.issue_number }}
@@ -97,6 +104,14 @@ Inputs:
 - `inputs.iteration` — attempt number.
 - `inputs.pr_number` — if non-empty, you're being re-invoked after a reviewer kickback and should **push updates to the existing PR branch**, not open a new PR.
 
+## Mode dispatch
+
+Check `inputs.mode`:
+- `impl` (default) or empty → follow the **Normal path** below.
+- `rebase` → follow the **Rebase-only mode** section instead; skip the Normal path entirely.
+
+Any other value → add `state:blocked` to `inputs.issue_number`, post `🛑 agent-team: unknown implementer mode "<value>".` on the issue, stop.
+
 ## Iteration guard (do this first)
 
 If `inputs.iteration` is greater than 3:
@@ -118,14 +133,21 @@ If `inputs.iteration` is greater than 3:
    - If `inputs.pr_number` is empty → create a new branch: `agent-team/issue-<inputs.issue_number>-<short-slug>`.
    - If `inputs.pr_number` is set → check out the existing PR's branch (via `gh pr view <pr_number> --json headRefName`) and push updates to it.
 
-3. Implement **only what the plan says** (plus any kickback requested changes). Do not expand scope.
+3. **Rebase the branch onto `main` before editing**:
+   - `git fetch origin main`
+   - If this is a fresh branch (inputs.pr_number empty) and you just branched from `main`, this is a no-op — skip.
+   - Otherwise: `git rebase origin/main`.
+     - **Clean rebase** → proceed.
+     - **Rebase produces conflicts** → attempt resolution (see "Conflict resolution" below). If resolved and the project's tests still pass after resolution, proceed. If not, `git rebase --abort`, add `state:blocked` to the issue, comment on the PR (or on the issue if no PR yet) with the conflicting file list and a one-sentence reason, and stop. Do not dispatch the reviewer.
+
+4. Implement **only what the plan says** (plus any kickback requested changes). Do not expand scope.
    - **Trust the plan.** The planner already explored the repo, confirmed file paths exist, and identified the exact edits. Do NOT re-read surrounding files to "understand the codebase" or "check for patterns." Read only the files the plan names under `Files to change`, plus `AGENTS.md` / `CLAUDE.md` / `CONTRIBUTING.md` once for convention reminders.
    - **Edit, don't explore.** For each step, make the edit directly. If a file's current content surprises you relative to the plan, stop (see the "plan is wrong" rule below) — do not start investigating.
    - **Run tests ONCE at the end**, not after each edit. Find the command by reading `package.json` / `Makefile` / CI files on the first pass; cache it. Commands to look for: `npm test`, `pytest`, `cargo test`, `go test ./...`, `make test`.
    - If tests fail due to your changes, fix and re-run (still one additional run, not per-edit). Unrelated infrastructure failures → document under `## Test status`.
    - **Budget check**: if this task feels like it needs more than ~5 tool calls for reading or more than 2 test runs, the plan is probably wrong or you're over-exploring. Stop and re-read this section.
 
-4. Produce the PR:
+5. Produce the PR:
    - **New PR** (first impl attempt): use `create-pull-request`.
      - Title: `<short description from spec>` (the workflow adds the `[agent-team] ` prefix).
      - Body:
@@ -136,14 +158,14 @@ If `inputs.iteration` is greater than 3:
        - Footer: `🤖 agent-team / implementer`.
    - **Kickback update** (pr_number was set): use `push-to-pull-request-branch` to push the fix commits to the existing PR. Post a brief comment on the PR summarizing what you changed in response to the review.
 
-5. Remove `state:impl-needed` and add `state:review-needed` on the issue (cosmetic — handoff is the dispatch in step 7).
+6. Remove `state:impl-needed` and add `state:review-needed` on the issue (cosmetic — handoff is the dispatch in step 8).
 
-6. Capture the PR number:
-   - New PR: the PR number comes from the `create-pull-request` safe output. Use it in step 7.
+7. Capture the PR number:
+   - New PR: the PR number comes from the `create-pull-request` safe output. Use it in step 8.
    - Kickback: use `inputs.pr_number` as-is.
 
-7. **Dispatch the reviewer-agent workflow** with:
-   - `pr_number`: the number from step 6
+8. **Dispatch the reviewer-agent workflow** with:
+   - `pr_number`: the number from step 7
    - `issue_number`: passed through from your input
    - `iteration`: passed through from your input (do NOT bump)
 
@@ -153,4 +175,27 @@ If `inputs.iteration` is greater than 3:
 - Never add dependencies that aren't in the plan. If the plan implies one, pick the minimal option and document in PR body.
 - If the plan is wrong (contradicts the spec, impossible in this repo): stop, do NOT open a partial PR. Add `state:blocked` on the issue and post a comment explaining what's wrong with the plan. A human will resolve.
 - One concern per PR. If the plan isn't scoped that way, that's a planner bug — report via state:blocked + comment.
-- The dispatch in step 7 is the real handoff. `state:review-needed` is decorative.
+- The dispatch in step 8 is the real handoff. `state:review-needed` is decorative.
+
+## Conflict resolution
+
+When `git rebase origin/main` produces conflicts (either in `impl` mode's rebase-at-start step or in `rebase` mode):
+
+1. Read each conflicted file. Look at the conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`).
+2. **Resolve only if the two sides edit disjoint concerns** — e.g. one side renames a variable, the other side adds an unrelated function nearby. Keep both changes.
+3. **Do not resolve** if either side changed the same logic (e.g. both sides modified the same function body in ways that affect behavior). That's a semantic conflict requiring human judgment.
+4. After resolving, `git add <files>` and `git rebase --continue`.
+5. After all conflicts are resolved (or none existed), run the project's test command **once**. If tests pass → push. If tests fail → `git rebase --abort` (or `git reset --hard ORIG_HEAD` if already past rebase), escalate via `state:blocked` with the failing test output.
+
+Escalation format (when blocking due to unresolvable conflict or test failure after resolve):
+- Add `state:blocked` to `inputs.issue_number`.
+- Comment on the PR (or issue, if no PR yet) — body:
+  ```
+  🛑 agent-team / <impl-or-rebase>: rebase onto main blocked.
+
+  **Reason**: <semantic conflict in <files> | tests failed after mechanical resolve>
+  **Conflicting files**: <list>
+  **What I tried**: <one sentence>
+  **Next**: human resolves locally, then removes state:blocked to re-enter the pipeline.
+  ```
+- Stop. Do not dispatch downstream.
