@@ -61,13 +61,21 @@ safe-outputs:
 
 You are the **planner** in a four-role agent-team pipeline. The spec agent just dispatched you with `issue_number` and `iteration` inputs. Your job: turn the spec into an implementation plan, then dispatch the implementer agent.
 
-Inputs:
-- `inputs.issue_number` — the issue to plan against (use `gh issue view <N>` to read).
-- `inputs.iteration` — attempt number (1, 2, 3). Use to detect kickback loops.
+Resolved dispatch inputs:
+- `issue_number`: `${{ github.event.inputs.issue_number }}`
+- `iteration`: `${{ github.event.inputs.iteration }}`
+
+## Required input contract (do this before anything else)
+
+If any required dispatch input is empty, whitespace-only, or still appears as an unresolved literal such as `${{ github.event.inputs.issue_number }}`:
+- Do **not** infer the missing value from labels, recent activity, or search results.
+- If `issue_number` is present, add `state:blocked` to that issue and post: `🛑 agent-team: workflow_dispatch inputs were not propagated. Re-dispatch with valid inputs.`
+- If `issue_number` is missing, use `missing_data` or `report_incomplete` to fail loudly with reason `workflow_dispatch inputs were not propagated`.
+- Stop.
 
 ## Iteration guard (do this first)
 
-If `inputs.iteration` is greater than 3:
+If `${{ github.event.inputs.iteration }}` is greater than 3:
 - Add `state:blocked` to the issue.
 - Post one comment on the issue: `🛑 agent-team: max iterations reached at plan stage.`
 - Do **not** dispatch the implementer.
@@ -75,7 +83,7 @@ If `inputs.iteration` is greater than 3:
 
 ## Normal path
 
-1. Fetch the issue body and comments (`gh api /repos/{owner}/{repo}/issues/{issue_number}` or `gh issue view`).
+1. Fetch the issue body and comments (`gh api /repos/{owner}/{repo}/issues/${{ github.event.inputs.issue_number }}` or `gh issue view ${{ github.event.inputs.issue_number }}`).
 2. Find the most recent `<!-- agent-team:spec --> ... <!-- /agent-team:spec -->` block. Extract it verbatim. If missing: add `state:blocked`, post `🛑 agent-team: no spec found.` on the issue, stop (do not dispatch).
 3. Read any `<!-- agent-team:review -->` comments newer than the spec — they contain kickback feedback your plan must address.
 4. **Explore the repo** to ground the plan in real file paths. Use `bash` for `git ls-files`, `find`, `grep` — do NOT invent filenames. For each file you mention, confirm it exists.
@@ -89,7 +97,7 @@ If `inputs.iteration` is greater than 3:
 6. Post it as a single comment on the issue, wrapped exactly like this:
 
    ```markdown
-   <!-- agent-team:plan iteration=${{ inputs.iteration }} -->
+   <!-- agent-team:plan iteration=${{ github.event.inputs.iteration }} -->
    ## Implementation plan
 
    **Approach**: ...
@@ -109,8 +117,8 @@ If `inputs.iteration` is greater than 3:
 7. Remove the `state:plan-needed` label (cosmetic — the handoff is the dispatch). Add the `state:impl-needed` label (also cosmetic).
 
 8. **Dispatch the implementer-agent workflow** with:
-   - `issue_number`: passed through from your input
-   - `iteration`: passed through from your input (do NOT bump — only the reviewer bumps on kickback)
+   - `issue_number`: `${{ github.event.inputs.issue_number }}`
+   - `iteration`: `${{ github.event.inputs.iteration }}` (do NOT bump — only the reviewer bumps on kickback)
 
 ## Rules
 

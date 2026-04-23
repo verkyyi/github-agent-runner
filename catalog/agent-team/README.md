@@ -104,13 +104,14 @@ Then apply the OAuth token tweak to each `.lock.yml` per [`skills/install-workfl
 1. Open an issue describing what you want built.
 2. Add the single label `agent-team`.
 3. Watch the thread. Each role posts its contribution as a comment; the implementer opens a draft PR that closes the issue when merged.
-4. Human override at any time: add `state:blocked` to halt, edit a comment to steer the next agent, or manually `gh workflow run` a specific role to retry a stuck stage.
+4. Human override at any time: add `state:blocked` to halt, edit a comment to steer the next agent, or manually `gh workflow run` a specific role to retry a stuck stage. Manual dispatches must pass the required `workflow_dispatch` inputs, and the downstream workflow markdown must read them via `${{ github.event.inputs.* }}`.
 5. **Retrying a blocked task**: clear `state:blocked`, then re-add `agent-team`. Spec-agent treats it as a fresh dispatch (because the state:* labels are gone and the spec markers are already satisfied — actually: to redo from scratch, also delete the prior spec comment).
 
 ## Limits and gotchas
 
 - **Concurrency**: each workflow uses `concurrency: group: agent-team-issue-${issue_number}` so only one role runs at a time per issue.
 - **Max iterations**: default 3 (reviewer kickback → implementer). The counter lives on the `iteration` input passed through the dispatch chain, bumped exclusively by the reviewer on kickback.
+- **Input propagation**: planner / implementer / reviewer must fail loudly if required `workflow_dispatch` inputs are missing. Do not rely on label search or recent-activity inference as a fallback.
 - **Non-UI only**: no screenshot capture. Reviewer validates via tests/CI status + reading the diff.
 - **Cost**: a single task can easily spend 4× the tokens of a monolithic workflow. Set `timeout-minutes` conservatively and monitor the first few runs.
 - **No auto-merge**: the reviewer approves but never merges. Humans merge.
