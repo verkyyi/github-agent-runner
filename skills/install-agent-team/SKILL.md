@@ -1,11 +1,11 @@
 ---
 name: install-agent-team
-description: Install the full four-role agent-team pattern (spec → plan → impl → review) into the current repo as one unified setup. Use when the user wants an end-to-end agent pipeline driven by a single issue label, or types /install-agent-team.
+description: Install the full agent-team pattern (spec → plan → impl → review + periodic sweep) into the current repo as one unified setup. Use when the user wants an end-to-end agent pipeline driven by a single issue label, or types /install-agent-team.
 ---
 
 # install-agent-team
 
-Install all four agent-team workflows into the current repo in one pass: fetch, wire auth once, apply the OAuth tweak to every lockfile, create the labels, validate, commit.
+Install all five agent-team workflows (spec, planner, implementer, reviewer, and the sweep that keeps PRs rebased) into the current repo in one pass: fetch, wire auth once, apply the OAuth tweak to every lockfile, create the labels, validate, commit.
 
 The result: the user dispatches a task by adding a single `agent-team` label to any issue. The four agents coordinate across the thread via structured comments and a small internal state machine.
 
@@ -24,7 +24,7 @@ The result: the user dispatches a task by adding a single `agent-team` label to 
 
 ### 1. Explain what's about to happen
 
-One paragraph: four workflows will be added, one auth secret will be set, seven labels will be created, nothing runs until the user opens an issue and adds `agent-team`. Ask for explicit confirmation to proceed. The user must opt in — workflows run on push.
+One paragraph: five workflows will be added (four pipeline roles + a sweep that runs every 6 hours to keep PRs rebased), one auth secret will be set, seven labels will be created, nothing runs until the user opens an issue and adds `agent-team`. Ask for explicit confirmation to proceed. The user must opt in — workflows run on push.
 
 ### 2. Preflight
 
@@ -47,9 +47,9 @@ Pick the path per `skills/install-workflow/auth.md`:
 - Check `gh secret list` first — if `CLAUDE_CODE_OAUTH_TOKEN` (OAuth) or `ANTHROPIC_API_KEY` (API) already exists, reuse it. Do not re-prompt.
 - Otherwise guide the user through `claude setup-token` + `gh secret set CLAUDE_CODE_OAUTH_TOKEN`, or `gh secret set ANTHROPIC_API_KEY` directly.
 
-Never echo or store the token. One secret covers all four workflows.
+Never echo or store the token. One secret covers all five workflows.
 
-### 4. Install all four workflows
+### 4. Install all five workflows
 
 Run, in sequence (each `gh aw add` auto-compiles):
 
@@ -58,13 +58,14 @@ gh aw add verkyyi/github-agent-runner/catalog/agent-team/spec-agent.md@main
 gh aw add verkyyi/github-agent-runner/catalog/agent-team/planner-agent.md@main
 gh aw add verkyyi/github-agent-runner/catalog/agent-team/implementer-agent.md@main
 gh aw add verkyyi/github-agent-runner/catalog/agent-team/reviewer-agent.md@main
+gh aw add verkyyi/github-agent-runner/catalog/agent-team/sweep-agent.md@main
 ```
 
-If any fails, stop and surface the exact error — do not proceed with a partial install. The four are a unit; a half-installed pipeline dead-ends on the first handoff.
+If any fails, stop and surface the exact error — do not proceed with a partial install. The five are a unit; a half-installed pipeline dead-ends on the first handoff.
 
 ### 5. Apply the OAuth tweak (OAuth path only)
 
-For each of the four `.lock.yml` files just generated, apply the two-pass sed from `skills/install-workflow/auth.md` Step 3. Then verify grep counts on each file per auth.md Step 4. API-key path skips this step entirely.
+For each of the five `.lock.yml` files just generated, apply the two-pass sed from `skills/install-workflow/auth.md` Step 3. Then verify grep counts on each file per auth.md Step 4. API-key path skips this step entirely.
 
 ### 6. Create the labels
 
@@ -94,7 +95,7 @@ Runs against all lock files. Safe (no recompile).
 
 Show the user, in this order:
 
-- Four files added under `.github/workflows/` (name each `.md` + `.lock.yml` pair)
+- Five files added under `.github/workflows/` (name each `.md` + `.lock.yml` pair)
 - Secret configured (name only, never value) or reused
 - Tweak applied to N lock files (or "skipped — API-key path")
 - Seven labels created (or "N already existed, skipped")
@@ -105,7 +106,7 @@ Then ask whether to commit and push. Do not commit without explicit confirmation
 
 ## Hard rules
 
-- **All or nothing**. If any of the four `gh aw add` calls fails, stop and back out. A half-installed pipeline is worse than none — users will dispatch tasks that stall silently.
+- **All or nothing**. If any of the five `gh aw add` calls fails, stop and back out. A half-installed pipeline is worse than none — users will dispatch tasks that stall silently.
 - Never write the workflow YAML by hand. Always delegate to `gh aw add`. The `.md` sources live in this plugin's `catalog/agent-team/`.
 - Never store or echo the auth token. Pipe through `gh secret set` stdin.
 - Never skip the `--exclude-env ANTHROPIC_API_KEY` carve-out when applying the OAuth tweak. See `skills/install-workflow/auth.md` for why.
@@ -128,7 +129,7 @@ Escape hatches at any time: remove a state label to pause, edit a comment to ste
 
 ## Out of scope for v0.1
 
-- Uninstalling the pipeline (remove the four `.md`/`.lock.yml` files + labels manually)
+- Uninstalling the pipeline (remove the five `.md`/`.lock.yml` files + labels manually)
 - Cross-repo install
 - Customizing max iterations without editing the workflow source
 - Turning individual roles on/off — the four are designed to work as a unit
