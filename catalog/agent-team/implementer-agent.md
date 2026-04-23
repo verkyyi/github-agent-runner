@@ -103,6 +103,7 @@ Inputs:
 - `inputs.issue_number` — the issue you're implementing against.
 - `inputs.iteration` — attempt number.
 - `inputs.pr_number` — if non-empty, you're being re-invoked after a reviewer kickback and should **push updates to the existing PR branch**, not open a new PR.
+- `inputs.mode` — behavior mode; `impl` (default) runs the normal spec→plan→PR flow, `rebase` skips to the Rebase-only mode section.
 
 ## Mode dispatch
 
@@ -135,10 +136,10 @@ If `inputs.iteration` is greater than 3:
 
 3. **Rebase the branch onto `main` before editing**:
    - `git fetch origin main`
-   - If this is a fresh branch (inputs.pr_number empty) and you just branched from `main`, this is a no-op — skip.
+   - If `inputs.pr_number` is empty and `git merge-base --is-ancestor origin/main HEAD` exits 0, the branch is already current — skip the rebase.
    - Otherwise: `git rebase origin/main`.
      - **Clean rebase** → proceed.
-     - **Rebase produces conflicts** → attempt resolution (see "Conflict resolution" below). If resolved and the project's tests still pass after resolution, proceed. If not, `git rebase --abort`, add `state:blocked` to the issue, comment on the PR (or on the issue if no PR yet) with the conflicting file list and a one-sentence reason, and stop. Do not dispatch the reviewer.
+     - **Rebase produces conflicts** → follow the "Conflict resolution" section below. On successful mechanical resolution, proceed with the normal flow. On escalation (unresolvable conflict or test failure), do not dispatch the reviewer.
 
 4. Implement **only what the plan says** (plus any kickback requested changes). Do not expand scope.
    - **Trust the plan.** The planner already explored the repo, confirmed file paths exist, and identified the exact edits. Do NOT re-read surrounding files to "understand the codebase" or "check for patterns." Read only the files the plan names under `Files to change`, plus `AGENTS.md` / `CLAUDE.md` / `CONTRIBUTING.md` once for convention reminders.
@@ -185,7 +186,7 @@ When `git rebase origin/main` produces conflicts (either in `impl` mode's rebase
 2. **Resolve only if the two sides edit disjoint concerns** — e.g. one side renames a variable, the other side adds an unrelated function nearby. Keep both changes.
 3. **Do not resolve** if either side changed the same logic (e.g. both sides modified the same function body in ways that affect behavior). That's a semantic conflict requiring human judgment.
 4. After resolving, `git add <files>` and `git rebase --continue`.
-5. After all conflicts are resolved (or none existed), run the project's test command **once**. If tests pass → push. If tests fail → `git rebase --abort` (or `git reset --hard ORIG_HEAD` if already past rebase), escalate via `state:blocked` with the failing test output.
+5. After all conflicts are resolved (or none existed), run the project's test command **once**. If tests pass → return to the caller's next step (in `impl` mode, proceed with the normal flow; in `rebase` mode, push and comment). If tests fail → `git rebase --abort` (or `git reset --hard ORIG_HEAD` if already past rebase), escalate via `state:blocked` with the failing test output.
 
 Escalation format (when blocking due to unresolvable conflict or test failure after resolve):
 - Add `state:blocked` to `inputs.issue_number`.
