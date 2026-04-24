@@ -104,8 +104,60 @@ Then apply the OAuth token tweak to each `.lock.yml` per [`skills/install-workfl
 1. Open an issue describing what you want built.
 2. Add the single label `agent-team`.
 3. Watch the thread. Each role posts its contribution as a comment; the implementer opens a draft PR that closes the issue when merged.
-4. Human override at any time: add `state:blocked` to halt, edit a comment to steer the next agent, or manually `gh workflow run` a specific role to retry a stuck stage. Manual dispatches must pass the required `workflow_dispatch` inputs, and the downstream workflow markdown must read them via `${{ github.event.inputs.* }}`.
+4. Human override at any time: add `state:blocked` to halt, edit a comment to steer the next agent, or manually re-dispatch a specific role to retry a stuck stage. Use the commands below — **all required inputs must be supplied; agents fail loudly if any are missing or unresolved**.
+
+   **Re-dispatch the planner** (e.g. spec was written, planner never ran):
+   ```bash
+   gh workflow run planner-agent.lock.yml \
+     -f issue_number=<N> \
+     -f iteration=1
+   ```
+
+   **Re-dispatch the implementer** (e.g. first attempt — no existing PR):
+   ```bash
+   gh workflow run implementer-agent.lock.yml \
+     -f issue_number=<N> \
+     -f iteration=1
+   ```
+
+   **Re-dispatch the implementer onto an existing PR** (kickback path):
+   ```bash
+   gh workflow run implementer-agent.lock.yml \
+     -f issue_number=<N> \
+     -f pr_number=<PR> \
+     -f iteration=<current-iteration>
+   ```
+
+   **Re-dispatch the reviewer**:
+   ```bash
+   gh workflow run reviewer-agent.lock.yml \
+     -f pr_number=<PR> \
+     -f issue_number=<N> \
+     -f iteration=<current-iteration>
+   ```
+
+   Where `<N>` is the issue number, `<PR>` is the pull request number, and `<current-iteration>` is the last iteration value shown in agent comments (e.g. `iteration=2` on kickback). The `iteration` input defaults to `"1"` if omitted.
 5. **Retrying a blocked task**: clear `state:blocked`, then re-add `agent-team`. Spec-agent treats it as a fresh dispatch (because the state:* labels are gone and the spec markers are already satisfied — actually: to redo from scratch, also delete the prior spec comment).
+
+## Troubleshooting
+
+### `🛑 agent-team: workflow_dispatch inputs were not propagated`
+
+**Cause**: a required `workflow_dispatch` input (`issue_number`, `pr_number`, or `iteration`) arrived empty or as an unresolved literal (e.g. `${{ github.event.inputs.issue_number }}`). This happens when the previous agent failed to dispatch correctly, or when a manual `gh workflow run` omitted a required field.
+
+**Fix**: re-dispatch the stuck stage with all required inputs explicitly set. See the `gh workflow run` commands in step 4 of [Kicking off a task](#kicking-off-a-task). Remove `state:blocked` from the issue first if it was set automatically.
+
+### Agent ran but did nothing — no comment, no dispatch
+
+**Cause**: usually the spec-agent early-exit guard. If the issue already has a `state:*` label or an existing `<!-- agent-team:spec -->` comment, the spec agent exits silently to avoid double-running.
+
+**Fix**: to redo from the spec stage, delete the prior spec comment from the issue, remove all `state:*` labels, and re-add the `agent-team` label.
+
+### Reviewer kicked back more than 3 times
+
+**Cause**: `iteration` exceeded the max-iteration guard (default 3). The reviewer or implementer will have added `state:blocked`.
+
+**Fix**: resolve the underlying issue manually (edit the code, update the plan comment, or clarify the spec). Then re-dispatch the implementer or reviewer with a reset `iteration=1` and the existing `pr_number`. Remove `state:blocked` before re-dispatching.
 
 ## Limits and gotchas
 
