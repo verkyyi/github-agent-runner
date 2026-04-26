@@ -74,14 +74,19 @@ Edit the relevant `SKILL.md` or data file. Test by running the skill locally wit
 
 ## Testing
 
-There is no automated test harness for skills — they are instruction sets interpreted by Claude Code, not code with unit tests. The validation steps are:
+The repo has a three-tier test suite in `tests/`. See [`tests/README.md`](tests/README.md) for full details and how to run each tier.
+
+**Quick pre-PR checks:**
 
 1. **Load the plugin**: `claude --plugin-dir .` — confirm no startup errors.
 2. **Run the skill manually**: invoke `/discover-workflows` or `/install-workflow` and walk through the flow.
-3. **Validate lock files** (if you changed `.lock.yml` files): `gh aw validate` — safe, does not recompile.
-4. **Check grep counts** (if you applied the OAuth tweak): see [skills/install-workflow/auth.md](skills/install-workflow/auth.md#step-4--verify-the-tweak-shape).
+3. **Tier-2 invariants** (fast, no Claude needed): `./tests/test-invariants.sh` — catches forbidden stale phrases, missing remediation text, and file-existence consistency.
+4. **Validate lock files** (if you changed `.lock.yml` files): `gh aw validate` — safe, does not recompile.
+5. **Check grep counts** (if you applied the OAuth tweak): see [skills/install-workflow/auth.md](skills/install-workflow/auth.md#step-4--verify-the-tweak-shape).
 
-Never test by committing untested changes to `main`. The installed workflows run on push to `main`, so a broken install skill or a bad `.lock.yml` will trigger a live workflow run.
+CI runs tier-2 (invariants) and tier-1 (skill prompt tests) on every PR. Tier-3 E2E tests are expensive — run them manually before releases.
+
+Never test by committing untested changes to `main`. The installed workflows run on push to `main`, so a broken skill or a bad `.lock.yml` will trigger a live workflow run.
 
 ## Workflow files
 
@@ -112,4 +117,7 @@ Branch naming conventions:
 
 ## Publishing (maintainers only)
 
-See the [Publishing section of the README](README.md#publishing) for the steps to submit the plugin to the Claude plugin registry.
+1. Bump `version` in `.claude-plugin/plugin.json` (e.g. `"0.2.1"` → `"0.2.2"`).
+2. Update the status line in `README.md` to match.
+3. Create a GitHub Release at the new version tag. Write release notes from the commit log since the prior release.
+4. No additional step for the self-hosted marketplace — `.claude-plugin/marketplace.json` points at the repo URL and tracks `main` automatically.
