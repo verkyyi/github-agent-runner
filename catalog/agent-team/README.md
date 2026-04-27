@@ -111,7 +111,13 @@ Then apply the OAuth token tweak to each `.lock.yml` per [`skills/install-workfl
 
 - **Concurrency**: each workflow uses `concurrency: group: agent-team-issue-${issue_number}` so only one role runs at a time per issue.
 - **Max iterations**: default 3 (reviewer kickback → implementer). The counter lives on the `iteration` input passed through the dispatch chain, bumped exclusively by the reviewer on kickback.
-- **Input propagation**: planner / implementer / reviewer must fail loudly if required `workflow_dispatch` inputs are missing. Do not rely on label search or recent-activity inference as a fallback.
+- **Input propagation**: if a required `workflow_dispatch` input (`issue_number`; also `pr_number` for the reviewer) arrives empty, whitespace-only, or as an unresolved literal (e.g. `${{ github.event.inputs.issue_number }}`), the agent stops immediately — no label inference, no guessing:
+  - `issue_number` present → adds `state:blocked` to the issue and posts: `🛑 agent-team: workflow_dispatch inputs were not propagated. Re-dispatch with valid inputs.`
+  - `issue_number` missing → calls `missing_data` / `report_incomplete` with reason `workflow_dispatch inputs were not propagated`.
+
+  To recover: re-dispatch the stuck workflow via `gh workflow run <workflow-file> -f issue_number=<n> [-f iteration=<n>] [-f pr_number=<n>]` with all required inputs filled in.
+
+- **`pr_number` is optional for the implementer**: a blank value or the unresolved literal `${{ github.event.inputs.pr_number }}` both mean "first attempt — open a new branch and PR". A real PR number means "kickback — push to the existing PR branch". The reviewer always provides the real number on kickback dispatch.
 - **Non-UI only**: no screenshot capture. Reviewer validates via tests/CI status + reading the diff.
 - **Cost**: a single task can easily spend 4× the tokens of a monolithic workflow. Set `timeout-minutes` conservatively and monitor the first few runs.
 - **No auto-merge**: the reviewer approves but never merges. Humans merge.
