@@ -60,7 +60,7 @@ jobs:
         # across runs. Cache key is content-addressed by OS only — we always
         # install the latest @anthropic-ai/claude-code; on miss, we just
         # pay the full install once and populate cache for next time.
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.npm
           key: ${{ runner.os }}-npm-claude-code
