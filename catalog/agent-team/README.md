@@ -104,7 +104,23 @@ Then apply the OAuth token tweak to each `.lock.yml` per [`skills/install-workfl
 1. Open an issue describing what you want built.
 2. Add the single label `agent-team`.
 3. Watch the thread. Each role posts its contribution as a comment; the implementer opens a draft PR that closes the issue when merged.
-4. Human override at any time: add `state:blocked` to halt, edit a comment to steer the next agent, or manually `gh workflow run` a specific role to retry a stuck stage. Manual dispatches must pass the required `workflow_dispatch` inputs, and the downstream workflow markdown must read them via `${{ github.event.inputs.* }}`.
+4. Human override at any time: add `state:blocked` to halt, edit a comment to steer the next agent, or manually re-dispatch a specific role to retry a stuck stage. Each workflow reads its inputs via `${{ github.event.inputs.* }}`, so pass all required fields with `-f`:
+
+   ```bash
+   # Re-dispatch the planner (re-plan from the existing spec)
+   gh workflow run planner-agent.lock.yml -f issue_number=42 -f iteration=1
+
+   # Re-dispatch the implementer — fresh attempt (no existing PR)
+   gh workflow run implementer-agent.lock.yml -f issue_number=42 -f iteration=1
+
+   # Re-dispatch the implementer — kickback with existing PR
+   gh workflow run implementer-agent.lock.yml -f issue_number=42 -f pr_number=15 -f iteration=2
+
+   # Re-dispatch the reviewer
+   gh workflow run reviewer-agent.lock.yml -f issue_number=42 -f pr_number=15 -f iteration=1
+   ```
+
+   Use the `.lock.yml` filename (not the `.md`), and replace the numbers with the actual issue and PR numbers from your run.
 5. **Retrying a blocked task**: clear `state:blocked`, then re-add `agent-team`. Spec-agent treats it as a fresh dispatch (because the state:* labels are gone and the spec markers are already satisfied — actually: to redo from scratch, also delete the prior spec comment).
 
 ## Limits and gotchas
