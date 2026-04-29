@@ -107,6 +107,34 @@ Then apply the OAuth token tweak to each `.lock.yml` per [`skills/install-workfl
 4. Human override at any time: add `state:blocked` to halt, edit a comment to steer the next agent, or manually `gh workflow run` a specific role to retry a stuck stage. Manual dispatches must pass the required `workflow_dispatch` inputs, and the downstream workflow markdown must read them via `${{ github.event.inputs.* }}`.
 5. **Retrying a blocked task**: clear `state:blocked`, then re-add `agent-team`. Spec-agent treats it as a fresh dispatch (because the state:* labels are gone and the spec markers are already satisfied — actually: to redo from scratch, also delete the prior spec comment).
 
+## Troubleshooting
+
+### `🛑 workflow_dispatch inputs were not propagated`
+
+This comment (paired with a `state:blocked` label) means a workflow fired without its required inputs — most commonly from the GitHub UI's "Run workflow" button, which leaves required fields blank, or a manual `gh workflow run` call that omitted a flag.
+
+Clear the `state:blocked` label, then re-dispatch with the `gh` CLI:
+
+```bash
+# Planner
+gh workflow run planner-agent.lock.yml \
+  -f issue_number=<N> -f iteration=<N>
+
+# Implementer — first attempt (new branch)
+gh workflow run implementer-agent.lock.yml \
+  -f issue_number=<N> -f iteration=<N>
+
+# Implementer — kickback retry (push to existing PR)
+gh workflow run implementer-agent.lock.yml \
+  -f issue_number=<N> -f iteration=<N> -f pr_number=<N>
+
+# Reviewer
+gh workflow run reviewer-agent.lock.yml \
+  -f pr_number=<N> -f issue_number=<N> -f iteration=<N>
+```
+
+`iteration` is 1-indexed; read it from the issue thread (the `iteration=N` attribute in the most recent `<!-- agent-team:spec -->` or `<!-- agent-team:plan -->` block). `pr_number` is optional for the implementer — omit it on the first attempt; set it on kickback retries so the implementer pushes to the existing PR branch instead of opening a new one.
+
 ## Limits and gotchas
 
 - **Concurrency**: each workflow uses `concurrency: group: agent-team-issue-${issue_number}` so only one role runs at a time per issue.
