@@ -80,7 +80,7 @@ To remove workflows this plugin installed into your target repo:
 
 - `gh aw remove <workflow>` for each installed workflow (deletes both the `.md` source and the compiled `.lock.yml`), then commit the deletion.
 - `gh secret delete CLAUDE_CODE_OAUTH_TOKEN` — or `ANTHROPIC_API_KEY`, whichever path you used — to unset the auth secret.
-- For `agent-team` specifically, also delete the seven labels: `gh label delete agent-team` plus `gh label delete state:<name>` for each of `plan-needed`, `impl-needed`, `review-needed`, `done`, `blocked`, and `in-progress`.
+- For `agent-team` specifically, also delete the seven labels: `gh label delete agent-team` plus `gh label delete state:<name>` for each of `plan-needed`, `impl-needed`, `review-needed`, `done`, and `blocked`, plus `gh label delete agent-team:reviewed`.
 
 Nothing else is persisted — the plugin writes only to your target repo (under user approval) and holds no local state outside Claude Code's own plugin directory.
 
