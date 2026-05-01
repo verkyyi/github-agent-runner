@@ -100,6 +100,7 @@ Show the user, in this order:
 - Seven labels created (or "N already existed, skipped")
 - **How to dispatch a task**: *"Open an issue describing what you want built. Add the `agent-team` label. Done."*
 - Reminder: `gh aw compile` reverts the OAuth tweak. Re-apply on every recompile. `gh aw validate` is safe.
+- **Manual re-dispatch**: if you need to retry a stuck stage with `gh workflow run <workflow-file>`, you must pass all required `workflow_dispatch` inputs explicitly (e.g. `--field issue_number=42 --field iteration=1`). The agents read inputs via `${{ github.event.inputs.* }}` and will **fail loudly** rather than infer missing values from labels or recent activity.
 
 Then ask whether to commit and push. Do not commit without explicit confirmation.
 
@@ -124,7 +125,7 @@ After install, the entire per-task journey is:
 6. Reviewer posts a verdict on the PR → `state:done` (approve) or back to `state:impl-needed` (kickback, max 3 rounds).
 7. User reviews the approved PR and merges. Agents never merge.
 
-Escape hatches at any time: remove a state label to pause, edit a comment to steer the next agent, add `state:blocked` to halt.
+Escape hatches at any time: remove a state label to pause, edit a comment to steer the next agent, add `state:blocked` to halt. To manually re-dispatch a stuck stage: `gh workflow run <file> --field issue_number=<N> --field iteration=<N>` — all required inputs must be passed; the agents fail loudly on missing inputs rather than guessing from labels.
 
 ## Out of scope for v0.1
 
