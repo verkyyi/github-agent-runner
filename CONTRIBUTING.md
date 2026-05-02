@@ -74,7 +74,22 @@ Edit the relevant `SKILL.md` or data file. Test by running the skill locally wit
 
 ## Testing
 
-There is no automated test harness for skills — they are instruction sets interpreted by Claude Code, not code with unit tests. The validation steps are:
+The repo ships a three-tier test suite under `tests/`. Full details are in [tests/README.md](tests/README.md). The short version:
+
+```bash
+./tests/run-tests.sh           # tier-1 skill tests + tier-2 invariants (~5 min)
+./tests/run-tests.sh --verbose # show per-assertion output
+```
+
+| Tier | What it tests | Speed |
+|---|---|---|
+| 2 | Grep/filesystem invariants (no Claude invocation) | <1s |
+| 1 | Each skill loads and describes itself correctly | ~1–2min per skill |
+| 3 | Full pipeline run on `verkyyi/agent-team-playground` | ~20–35min, opt-in |
+
+Tier-1 and tier-2 also run in CI on every PR (`ci-tests.yml`).
+
+Additional validation steps for specific changes:
 
 1. **Load the plugin**: `claude --plugin-dir .` — confirm no startup errors.
 2. **Run the skill manually**: invoke `/discover-workflows` or `/install-workflow` and walk through the flow.
