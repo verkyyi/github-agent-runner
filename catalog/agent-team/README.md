@@ -111,7 +111,7 @@ Then apply the OAuth token tweak to each `.lock.yml` per [`skills/install-workfl
 
 - **Concurrency**: each workflow uses `concurrency: group: agent-team-issue-${issue_number}` so only one role runs at a time per issue.
 - **Max iterations**: default 3 (reviewer kickback → implementer). The counter lives on the `iteration` input passed through the dispatch chain, bumped exclusively by the reviewer on kickback.
-- **Input propagation**: planner / implementer / reviewer must fail loudly if required `workflow_dispatch` inputs are missing. Do not rely on label search or recent-activity inference as a fallback.
+- **Input propagation**: planner / implementer / reviewer fail loudly if required `workflow_dispatch` inputs are missing, whitespace-only, or arrive as unresolved template literals (e.g. `${{ github.event.inputs.issue_number }}`). When the guard triggers: if `issue_number` is available, the agent adds `state:blocked` to the issue and posts `🛑 agent-team: workflow_dispatch inputs were not propagated. Re-dispatch with valid inputs.`; if `issue_number` is itself absent, the agent calls `missing_data` / `report_incomplete` and stops. **Recovery**: open the upstream dispatch step in the Actions tab to find the actual values, then re-dispatch manually — `gh workflow run <next-agent>.lock.yml -f issue_number=<N> -f iteration=<N>`. Never infer missing inputs from labels or recent activity; that masks the root cause.
 - **Non-UI only**: no screenshot capture. Reviewer validates via tests/CI status + reading the diff.
 - **Cost**: a single task can easily spend 4× the tokens of a monolithic workflow. Set `timeout-minutes` conservatively and monitor the first few runs.
 - **No auto-merge**: the reviewer approves but never merges. Humans merge.
