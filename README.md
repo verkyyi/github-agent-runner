@@ -123,6 +123,16 @@ catalog/
 `.lock.yml` files are marked `linguist-generated` and `merge=ours` in `.gitattributes` to prevent spurious merge conflicts.
 </details>
 
+## Publishing
+
+> Maintainers only — requires write access to this repo.
+
+1. **Bump the version** in `.claude-plugin/plugin.json`. Open a PR, get it merged to `main`.
+2. **Create a GitHub release** tagged `vX.Y.Z` matching the new version. The self-hosted marketplace URL (`https://raw.githubusercontent.com/verkyyi/github-agent-runner/main/.claude-plugin/marketplace.json`) always resolves to the latest `main`, so there is no separate marketplace submission step — users who have already added the marketplace get the updated plugin on their next `/plugin update`.
+3. **Update external listings** if the plugin description or category changed:
+   - [claude-plugins.dev](https://claude-plugins.dev) — submit the updated listing via the site's form.
+   - [ClaudePluginHub](https://claudepluginhub.com) — same.
+
 ## Credits
 
 Built on two open-source projects from the [GitHub Next](https://githubnext.com) team:
