@@ -48,6 +48,10 @@ Each agent finishes its work by **emitting a `dispatch-workflow` safe-output** n
 
 `state:*` labels (`plan-needed`, `impl-needed`, `review-needed`, `done`, `blocked`) are **cosmetic breadcrumbs for humans** — they let the GitHub UI show pipeline progress at a glance. They do **not** drive control flow; the `dispatch-workflow` safe-outputs do.
 
+### `pr_number` lifecycle
+
+`pr_number` is optional on the implementer. On the first implementation attempt, it is blank — the implementer creates a new draft PR and captures the resulting PR number. On reviewer kickback, the reviewer passes that same `pr_number` back to the implementer (along with a bumped `iteration`), so the implementer pushes fixes to the existing PR branch instead of opening a second one. The issue always closes via a single PR regardless of how many kickback cycles occur.
+
 ## The comment contract
 
 Agents communicate their work product via fenced HTML-comment blocks, which downstream agents grep out of the issue body + comments. Never rely on prose ordering.
@@ -111,7 +115,7 @@ Then apply the OAuth token tweak to each `.lock.yml` per [`skills/install-workfl
 
 - **Concurrency**: each workflow uses `concurrency: group: agent-team-issue-${issue_number}` so only one role runs at a time per issue.
 - **Max iterations**: default 3 (reviewer kickback → implementer). The counter lives on the `iteration` input passed through the dispatch chain, bumped exclusively by the reviewer on kickback.
-- **Input propagation**: planner / implementer / reviewer must fail loudly if required `workflow_dispatch` inputs are missing. Do not rely on label search or recent-activity inference as a fallback.
+- **Input propagation**: planner, implementer, and reviewer each validate all required `workflow_dispatch` inputs before doing any work. If a required input is empty, whitespace-only, or still appears as an unresolved template literal (e.g. `${{ github.event.inputs.issue_number }}`), the workflow posts `🛑 agent-team: workflow_dispatch inputs were not propagated. Re-dispatch with valid inputs.` on the issue and stops. Do not rely on label search or recent-activity inference as a fallback — that approach hides dispatch bugs and silently corrupts pipeline state. The `pr_number` input on the implementer is optional by design and is treated as "not set" when blank or when it matches the unresolved literal pattern.
 - **Non-UI only**: no screenshot capture. Reviewer validates via tests/CI status + reading the diff.
 - **Cost**: a single task can easily spend 4× the tokens of a monolithic workflow. Set `timeout-minutes` conservatively and monitor the first few runs.
 - **No auto-merge**: the reviewer approves but never merges. Humans merge.
