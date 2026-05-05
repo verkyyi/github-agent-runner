@@ -74,12 +74,25 @@ Edit the relevant `SKILL.md` or data file. Test by running the skill locally wit
 
 ## Testing
 
-There is no automated test harness for skills — they are instruction sets interpreted by Claude Code, not code with unit tests. The validation steps are:
+### Automated tests (CI)
+
+The repository uses a tiered test strategy. All tests live in `tests/`. CI runs tier-2 invariants and tier-1 skill tests on every PR.
+
+| Tier | How to run | Speed |
+|---|---|---|
+| 2 — invariants | `bash tests/test-invariants.sh` | <1s, no Claude needed |
+| 1 — skill tests | `bash tests/run-tests.sh` | 4–5 min, uses Claude tokens |
+| 3 — E2E (manual) | `bash tests/test-e2e.sh` | 20–35 min, see `tests/README.md` |
+
+Run tier-2 locally before every commit and tier-1 before opening a PR. Tier-3 runs are manual, reserved for releases and significant catalog changes.
+
+### Manual validation steps
+
+For changes not covered by automated tests (OAuth tweak shape, `.lock.yml` validity):
 
 1. **Load the plugin**: `claude --plugin-dir .` — confirm no startup errors.
-2. **Run the skill manually**: invoke `/discover-workflows` or `/install-workflow` and walk through the flow.
-3. **Validate lock files** (if you changed `.lock.yml` files): `gh aw validate` — safe, does not recompile.
-4. **Check grep counts** (if you applied the OAuth tweak): see [skills/install-workflow/auth.md](skills/install-workflow/auth.md#step-4--verify-the-tweak-shape).
+2. **Validate lock files** (if you changed `.lock.yml` files): `gh aw validate` — safe, does not recompile.
+3. **Check grep counts** (if you applied the OAuth tweak): see [skills/install-workflow/auth.md](skills/install-workflow/auth.md#step-4--verify-the-tweak-shape).
 
 Never test by committing untested changes to `main`. The installed workflows run on push to `main`, so a broken install skill or a bad `.lock.yml` will trigger a live workflow run.
 
