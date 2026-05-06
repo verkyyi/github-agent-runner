@@ -123,6 +123,20 @@ catalog/
 `.lock.yml` files are marked `linguist-generated` and `merge=ours` in `.gitattributes` to prevent spurious merge conflicts.
 </details>
 
+## Publishing
+
+_Maintainers only._ Steps to ship a new plugin version:
+
+1. **Bump the version** in `.claude-plugin/plugin.json`. Follow semver: patch for bug fixes, minor for new skills or catalog entries, major for breaking changes to skill names or the marketplace URL. Update the status line at the top of this README (`> **Status**: vX.Y.Z`).
+
+2. **Create a GitHub release** tagged `vX.Y.Z`. The release description is the changelog — include what changed, any upgrade notes, and credit contributors.
+
+The marketplace URL is stable and points to `main`, so users who have already added the marketplace pick up the new version automatically on their next `claude` session (no re-install needed).
+
+To update the external directory listings this plugin appears in, follow each directory's own submission process:
+- [claude-plugins.dev](https://claude-plugins.dev)
+- [ClaudePluginHub](https://claudepluginhub.com)
+
 ## Credits
 
 Built on two open-source projects from the [GitHub Next](https://githubnext.com) team:
