@@ -74,14 +74,31 @@ Edit the relevant `SKILL.md` or data file. Test by running the skill locally wit
 
 ## Testing
 
-There is no automated test harness for skills — they are instruction sets interpreted by Claude Code, not code with unit tests. The validation steps are:
+Tests live in `tests/`. Run the full fast suite with:
+
+```bash
+./tests/run-tests.sh
+./tests/run-tests.sh --verbose          # show per-assertion output
+./tests/run-tests.sh --timeout 600      # per-test timeout in seconds
+```
+
+Three tiers (see [`tests/README.md`](tests/README.md) for full details):
+
+| Tier | What it checks | Speed |
+|---|---|---|
+| 2 — invariants | Grep/filesystem assertions tied to past bugs: forbidden stale phrases, required remediation text, file-existence consistency, version alignment. No Claude invocation. | <1s |
+| 1 — skill tests | Claude headless checks on each skill: does it load, does it describe its behavior correctly, does it follow its hard rules? | ~4-5 min |
+| 3 — end-to-end | Full pipeline run on a live playground repo. Manual only; costs real tokens. | ~20-35 min |
+
+CI (`.github/workflows/ci-tests.yml`) runs tier-2 + tier-1 on every PR and push to `main`. Tier-3 tests are opt-in (`./tests/test-e2e.sh`) and must be run manually before releases.
+
+Quick validation steps that don't require the full suite:
 
 1. **Load the plugin**: `claude --plugin-dir .` — confirm no startup errors.
-2. **Run the skill manually**: invoke `/discover-workflows` or `/install-workflow` and walk through the flow.
-3. **Validate lock files** (if you changed `.lock.yml` files): `gh aw validate` — safe, does not recompile.
-4. **Check grep counts** (if you applied the OAuth tweak): see [skills/install-workflow/auth.md](skills/install-workflow/auth.md#step-4--verify-the-tweak-shape).
+2. **Validate lock files** (if you changed `.lock.yml` files): `gh aw validate` — safe, does not recompile.
+3. **Check grep counts** (if you applied the OAuth tweak): see [skills/install-workflow/auth.md](skills/install-workflow/auth.md#step-4--verify-the-tweak-shape).
 
-Never test by committing untested changes to `main`. The installed workflows run on push to `main`, so a broken install skill or a bad `.lock.yml` will trigger a live workflow run.
+Never commit untested changes to `main`. The installed workflows run on push to `main`, so a broken skill or bad `.lock.yml` will trigger a live workflow run.
 
 ## Workflow files
 
