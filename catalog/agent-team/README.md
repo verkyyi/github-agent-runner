@@ -111,8 +111,44 @@ Then apply the OAuth token tweak to each `.lock.yml` per [`skills/install-workfl
 
 - **Concurrency**: each workflow uses `concurrency: group: agent-team-issue-${issue_number}` so only one role runs at a time per issue.
 - **Max iterations**: default 3 (reviewer kickback → implementer). The counter lives on the `iteration` input passed through the dispatch chain, bumped exclusively by the reviewer on kickback.
-- **Input propagation**: planner / implementer / reviewer must fail loudly if required `workflow_dispatch` inputs are missing. Do not rely on label search or recent-activity inference as a fallback.
+- **Input propagation**: If `workflow_dispatch` inputs fail to propagate (they arrive as unresolved `${{ github.event.inputs.* }}` literals, are empty, or are whitespace-only), the affected agent fails loud:
+  - If `issue_number` is resolvable, the agent adds `state:blocked` to the issue and posts: `🛑 agent-team: workflow_dispatch inputs were not propagated. Re-dispatch with valid inputs.`
+  - If `issue_number` itself is missing, the run terminates via `missing_data` / `report_incomplete`.
+  - **Recovery**: clear `state:blocked`, then re-dispatch the stalled agent manually — see [Troubleshooting](#troubleshooting) below.
 - **Non-UI only**: no screenshot capture. Reviewer validates via tests/CI status + reading the diff.
 - **Cost**: a single task can easily spend 4× the tokens of a monolithic workflow. Set `timeout-minutes` conservatively and monitor the first few runs.
 - **No auto-merge**: the reviewer approves but never merges. Humans merge.
 - **Dispatch visibility**: each `dispatch-workflow` call shows up as a new run in the Actions tab, linked to the upstream run. Makes the chain visible.
+
+## Troubleshooting
+
+### `workflow_dispatch` inputs not propagated
+
+**Symptom**: The issue has `state:blocked` and a comment containing `workflow_dispatch inputs were not propagated`. Or a workflow run ended with `missing_data` / `report_incomplete`.
+
+**Cause**: gh-aw's `dispatch-workflow` safe-output did not forward inputs correctly — typically because the dispatching agent's run timed out or hit an infrastructure error before the dispatch completed.
+
+**Recovery**:
+1. Clear `state:blocked` from the issue.
+2. Re-dispatch the stalled agent manually, passing all required inputs explicitly:
+
+   ```bash
+   # Re-dispatch the planner (spec was posted but planner never started):
+   gh workflow run planner-agent.lock.yml \
+     -f issue_number=<N> \
+     -f iteration=1
+
+   # Re-dispatch the implementer (plan was posted but implementer never started):
+   gh workflow run implementer-agent.lock.yml \
+     -f issue_number=<N> \
+     -f iteration=<K> \
+     -f pr_number=           # leave blank on the first attempt
+
+   # Re-dispatch the reviewer (PR was opened but reviewer never started):
+   gh workflow run reviewer-agent.lock.yml \
+     -f pr_number=<PR#> \
+     -f issue_number=<N> \
+     -f iteration=<K>
+   ```
+
+**Note on `pr_number`**: The implementer treats a blank `pr_number` and an unresolved `${{ github.event.inputs.pr_number }}` literal identically — both signal "first impl attempt, create a new branch." Only a real numeric PR number (forwarded by the reviewer on kickback) causes the implementer to push updates to an existing PR branch instead.
