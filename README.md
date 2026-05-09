@@ -123,6 +123,44 @@ catalog/
 `.lock.yml` files are marked `linguist-generated` and `merge=ours` in `.gitattributes` to prevent spurious merge conflicts.
 </details>
 
+## Publishing
+
+> Maintainers only. Follow these steps when cutting a new release.
+
+### 1. Bump the version
+
+Update the `version` field in `.claude-plugin/plugin.json`:
+
+```json
+{
+  "version": "0.X.Y"
+}
+```
+
+Use semantic versioning: bump `patch` for fixes and documentation, `minor` for new skills or catalog entries, `major` for breaking changes to the plugin manifest or skill interface.
+
+### 2. Commit and tag
+
+```bash
+git add .claude-plugin/plugin.json
+git commit -m "chore: bump to v0.X.Y"
+git tag v0.X.Y
+git push origin main --tags
+```
+
+### 3. Create a GitHub Release
+
+Go to [Releases](https://github.com/verkyyi/github-agent-runner/releases/new) and create a release from the tag. Include a changelog entry summarizing what changed.
+
+### 4. Update registry listings
+
+The plugin is listed on two community registries. Update each after the GitHub Release is published:
+
+- **[claude-plugins.dev](https://claude-plugins.dev)** — follow the submission process linked on the site.
+- **[ClaudePluginHub](https://claudepluginhub.com)** — update the listing with the new version and changelog.
+
+The self-hosted marketplace at `.claude-plugin/marketplace.json` points to the repository URL and picks up the latest version automatically — no manual update required.
+
 ## Credits
 
 Built on two open-source projects from the [GitHub Next](https://githubnext.com) team:
