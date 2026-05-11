@@ -111,7 +111,10 @@ Then apply the OAuth token tweak to each `.lock.yml` per [`skills/install-workfl
 
 - **Concurrency**: each workflow uses `concurrency: group: agent-team-issue-${issue_number}` so only one role runs at a time per issue.
 - **Max iterations**: default 3 (reviewer kickback → implementer). The counter lives on the `iteration` input passed through the dispatch chain, bumped exclusively by the reviewer on kickback.
-- **Input propagation**: planner / implementer / reviewer must fail loudly if required `workflow_dispatch` inputs are missing. Do not rely on label search or recent-activity inference as a fallback.
+- **Input propagation**: planner / implementer / reviewer fail loudly if required `workflow_dispatch` inputs are missing **or** still appear as unresolved template literals (e.g. the raw string `${{ github.event.inputs.issue_number }}`). Never infer a missing value from labels, recent activity, or search results. Exact behavior:
+  - `issue_number` present but empty/unresolved → add `state:blocked`, post `🛑 agent-team: workflow_dispatch inputs were not propagated. Re-dispatch with valid inputs.`
+  - `issue_number` itself missing → call `missing_data` / `report_incomplete` to fail loudly.
+  - `pr_number` (implementer only) blank or still a literal → treated as "no existing PR"; a new branch + PR is created. Both are valid first-dispatch states.
 - **Non-UI only**: no screenshot capture. Reviewer validates via tests/CI status + reading the diff.
 - **Cost**: a single task can easily spend 4× the tokens of a monolithic workflow. Set `timeout-minutes` conservatively and monitor the first few runs.
 - **No auto-merge**: the reviewer approves but never merges. Humans merge.
