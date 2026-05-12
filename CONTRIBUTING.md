@@ -112,4 +112,4 @@ Branch naming conventions:
 
 ## Publishing (maintainers only)
 
-See the [Publishing section of the README](README.md#publishing) for the steps to submit the plugin to the Claude plugin registry.
+Submit the plugin to the Claude plugin registry by updating both `.claude-plugin/marketplace.json` and the entries on [claude-plugins.dev](https://claude-plugins.dev) and [ClaudePluginHub](https://claudepluginhub.com). Bump the version in `.claude-plugin/plugin.json` and tag the release before submitting.
