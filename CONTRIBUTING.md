@@ -74,14 +74,27 @@ Edit the relevant `SKILL.md` or data file. Test by running the skill locally wit
 
 ## Testing
 
-There is no automated test harness for skills — they are instruction sets interpreted by Claude Code, not code with unit tests. The validation steps are:
+The repo has a multi-tier automated test suite documented in [`tests/README.md`](tests/README.md). Run it before opening a PR:
 
-1. **Load the plugin**: `claude --plugin-dir .` — confirm no startup errors.
-2. **Run the skill manually**: invoke `/discover-workflows` or `/install-workflow` and walk through the flow.
-3. **Validate lock files** (if you changed `.lock.yml` files): `gh aw validate` — safe, does not recompile.
-4. **Check grep counts** (if you applied the OAuth tweak): see [skills/install-workflow/auth.md](skills/install-workflow/auth.md#step-4--verify-the-tweak-shape).
+```bash
+./tests/run-tests.sh            # tier-1 + tier-2 (default, ~4-5 min)
+./tests/run-tests.sh --verbose  # show per-assertion output
+```
 
-Never test by committing untested changes to `main`. The installed workflows run on push to `main`, so a broken install skill or a bad `.lock.yml` will trigger a live workflow run.
+| Tier | What it covers | When to run |
+|---|---|---|
+| 2 (fast) | Grep/filesystem invariants — no Claude invocation, <1s | Always |
+| 1 (~4-5 min) | Skill sanity: loads, mentions required commands, documents both auth paths, hard rules intact | Every PR |
+| 3 (slow, opt-in) | Full end-to-end pipeline on the playground repo; skill E2E (destructive — provisions a throwaway repo) | Before releases, manually |
+
+CI runs tier-2 + tier-1 on every PR and push to `main`. Tier-3 tests are not run in CI; run them manually with `./tests/test-e2e.sh` (see `tests/README.md` for options).
+
+Additional checks:
+
+- **Validate lock files** (if you changed `.lock.yml` files): `gh aw validate` — safe, does not recompile.
+- **Check grep counts** (if you applied the OAuth tweak): see [skills/install-workflow/auth.md](skills/install-workflow/auth.md#step-4--verify-the-tweak-shape).
+
+Never push untested changes directly to `main`. The installed workflows run on push to `main`, so a broken skill or a bad `.lock.yml` triggers a live workflow run.
 
 ## Workflow files
 
@@ -112,4 +125,6 @@ Branch naming conventions:
 
 ## Publishing (maintainers only)
 
-See the [Publishing section of the README](README.md#publishing) for the steps to submit the plugin to the Claude plugin registry.
+1. Bump the version in `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` to match (semver).
+2. Create a GitHub release tagged `v<version>` with a changelog entry.
+3. Notify the registries — the plugin is listed on [claude-plugins.dev](https://claude-plugins.dev) and [ClaudePluginHub](https://claudepluginhub.com); submit the updated `marketplace.json` URL to each per their submission process.
