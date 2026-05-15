@@ -74,14 +74,27 @@ Edit the relevant `SKILL.md` or data file. Test by running the skill locally wit
 
 ## Testing
 
-There is no automated test harness for skills — they are instruction sets interpreted by Claude Code, not code with unit tests. The validation steps are:
+The repo has a three-tier test suite under `tests/`. See [`tests/README.md`](tests/README.md) for the full reference.
+
+```bash
+./tests/test-invariants.sh   # Tier 2: <1s grep/filesystem checks — run this first
+./tests/run-tests.sh         # Tier 1: skill tests via Claude Code (~4-5 min total)
+```
+
+**Tier 2** (`test-invariants.sh`) checks for forbidden stale phrases, required remediation text, file-existence consistency, and version alignment — no Claude invocation, no cost. Run it locally before every commit.
+
+**Tier 1** (`run-tests.sh`) invokes Claude Code headlessly with questions about each skill and asserts patterns in the response. Runs in CI on every PR and push to `main`. Requires Claude auth (ambient OAuth or `ANTHROPIC_API_KEY`). Fork PRs skip this step — see `tests/README.md#ci`.
+
+**Tier 3** (`test-e2e*.sh`) runs a live pipeline on a playground repo or creates throwaway repos to exercise the install skills end-to-end. Expensive (~20-35 min); run manually before releases only. See `tests/README.md#running-tier-3`.
+
+Additional local checks:
 
 1. **Load the plugin**: `claude --plugin-dir .` — confirm no startup errors.
 2. **Run the skill manually**: invoke `/discover-workflows` or `/install-workflow` and walk through the flow.
 3. **Validate lock files** (if you changed `.lock.yml` files): `gh aw validate` — safe, does not recompile.
 4. **Check grep counts** (if you applied the OAuth tweak): see [skills/install-workflow/auth.md](skills/install-workflow/auth.md#step-4--verify-the-tweak-shape).
 
-Never test by committing untested changes to `main`. The installed workflows run on push to `main`, so a broken install skill or a bad `.lock.yml` will trigger a live workflow run.
+Never commit untested changes to `main`. The installed workflows run on push to `main`, so a broken install skill or a bad `.lock.yml` will trigger a live workflow run.
 
 ## Workflow files
 
@@ -112,4 +125,4 @@ Branch naming conventions:
 
 ## Publishing (maintainers only)
 
-See the [Publishing section of the README](README.md#publishing) for the steps to submit the plugin to the Claude plugin registry.
+Coordinate with the maintainer team to bump the version in `.claude-plugin/plugin.json`, create a GitHub Release, and submit the updated `marketplace.json` to the external plugin registries (`claude-plugins.dev`, `ClaudePluginHub`).
