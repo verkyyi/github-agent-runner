@@ -105,7 +105,21 @@ Then apply the OAuth token tweak to each `.lock.yml` per [`skills/install-workfl
 2. Add the single label `agent-team`.
 3. Watch the thread. Each role posts its contribution as a comment; the implementer opens a draft PR that closes the issue when merged.
 4. Human override at any time: add `state:blocked` to halt, edit a comment to steer the next agent, or manually `gh workflow run` a specific role to retry a stuck stage. Manual dispatches must pass the required `workflow_dispatch` inputs, and the downstream workflow markdown must read them via `${{ github.event.inputs.* }}`.
-5. **Retrying a blocked task**: clear `state:blocked`, then re-add `agent-team`. Spec-agent treats it as a fresh dispatch (because the state:* labels are gone and the spec markers are already satisfied — actually: to redo from scratch, also delete the prior spec comment).
+5. **Retrying a blocked task**: the correct recovery depends on *why* the issue was blocked.
+   - **Blocked by the reviewer (kickback cap, architectural decision)**: clear `state:blocked`, re-add `agent-team`. The spec agent's early-exit guard will fire (spec + state:* labels already exist), so nothing restarts. Instead, manually dispatch the specific stage you want to retry: `gh workflow run planner-agent.lock.yml -f issue_number=<N> -f iteration=1` (reset iteration to 1 to clear the kickback counter). Always supply `-f issue_number=<N>` and any other required inputs.
+   - **Blocked because workflow_dispatch inputs were not propagated** (the agent posted `🛑 agent-team: workflow_dispatch inputs were not propagated`): this means the run was triggered without the required inputs — usually a manual dispatch that omitted `-f` flags. Clear `state:blocked`, then re-dispatch the correct stage with all required inputs:
+     ```bash
+     # Planner
+     gh workflow run planner-agent.lock.yml -f issue_number=<N> -f iteration=<I>
+     # Implementer (first pass — no pr_number)
+     gh workflow run implementer-agent.lock.yml -f issue_number=<N> -f iteration=<I>
+     # Implementer (kickback — existing PR)
+     gh workflow run implementer-agent.lock.yml -f issue_number=<N> -f iteration=<I> -f pr_number=<PR>
+     # Reviewer
+     gh workflow run reviewer-agent.lock.yml -f pr_number=<PR> -f issue_number=<N> -f iteration=<I>
+     ```
+     Do **not** simply re-add the `agent-team` label — the spec agent will immediately exit (spec already posted), so the pipeline will not restart.
+   - **Full restart from scratch**: clear all `state:*` labels and delete the `<!-- agent-team:spec -->` comment from the issue, then re-add the `agent-team` label.
 
 ## Limits and gotchas
 
