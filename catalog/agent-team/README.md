@@ -104,14 +104,31 @@ Then apply the OAuth token tweak to each `.lock.yml` per [`skills/install-workfl
 1. Open an issue describing what you want built.
 2. Add the single label `agent-team`.
 3. Watch the thread. Each role posts its contribution as a comment; the implementer opens a draft PR that closes the issue when merged.
-4. Human override at any time: add `state:blocked` to halt, edit a comment to steer the next agent, or manually `gh workflow run` a specific role to retry a stuck stage. Manual dispatches must pass the required `workflow_dispatch` inputs, and the downstream workflow markdown must read them via `${{ github.event.inputs.* }}`.
+4. Human override at any time: add `state:blocked` to halt, edit a comment to steer the next agent, or manually re-dispatch a specific role to retry a stuck stage:
+
+   ```bash
+   # Re-dispatch planner (replace 42 and 1 with your issue number and iteration)
+   gh workflow run planner-agent.lock.yml -f issue_number=42 -f iteration=1
+
+   # Re-dispatch implementer — first attempt (no existing PR)
+   gh workflow run implementer-agent.lock.yml -f issue_number=42 -f iteration=1
+
+   # Re-dispatch implementer — kickback retry (pass the existing PR number)
+   gh workflow run implementer-agent.lock.yml -f issue_number=42 -f iteration=2 -f pr_number=99
+
+   # Re-dispatch reviewer
+   gh workflow run reviewer-agent.lock.yml -f pr_number=99 -f issue_number=42 -f iteration=1
+   ```
+
+   All required inputs must be explicit. If any required input is missing or unresolved, the agent adds `state:blocked` to the issue and posts: `🛑 agent-team: workflow_dispatch inputs were not propagated. Re-dispatch with valid inputs.`
+
 5. **Retrying a blocked task**: clear `state:blocked`, then re-add `agent-team`. Spec-agent treats it as a fresh dispatch (because the state:* labels are gone and the spec markers are already satisfied — actually: to redo from scratch, also delete the prior spec comment).
 
 ## Limits and gotchas
 
 - **Concurrency**: each workflow uses `concurrency: group: agent-team-issue-${issue_number}` so only one role runs at a time per issue.
 - **Max iterations**: default 3 (reviewer kickback → implementer). The counter lives on the `iteration` input passed through the dispatch chain, bumped exclusively by the reviewer on kickback.
-- **Input propagation**: planner / implementer / reviewer must fail loudly if required `workflow_dispatch` inputs are missing. Do not rely on label search or recent-activity inference as a fallback.
+- **Input propagation**: planner / implementer / reviewer validate all `workflow_dispatch` inputs before doing any work. If a required input is missing or still appears as an unresolved template literal, the agent adds `state:blocked` to the issue (or calls `report_incomplete` if `issue_number` itself is absent) and stops. Never infer missing inputs from labels or recent activity — fix the inputs and re-dispatch explicitly.
 - **Non-UI only**: no screenshot capture. Reviewer validates via tests/CI status + reading the diff.
 - **Cost**: a single task can easily spend 4× the tokens of a monolithic workflow. Set `timeout-minutes` conservatively and monitor the first few runs.
 - **No auto-merge**: the reviewer approves but never merges. Humans merge.
