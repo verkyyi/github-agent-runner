@@ -104,14 +104,51 @@ Then apply the OAuth token tweak to each `.lock.yml` per [`skills/install-workfl
 1. Open an issue describing what you want built.
 2. Add the single label `agent-team`.
 3. Watch the thread. Each role posts its contribution as a comment; the implementer opens a draft PR that closes the issue when merged.
-4. Human override at any time: add `state:blocked` to halt, edit a comment to steer the next agent, or manually `gh workflow run` a specific role to retry a stuck stage. Manual dispatches must pass the required `workflow_dispatch` inputs, and the downstream workflow markdown must read them via `${{ github.event.inputs.* }}`.
+4. Human override at any time: add `state:blocked` to halt, edit a comment to steer the next agent, or manually re-dispatch a specific role to retry a stuck stage. Agents validate their `workflow_dispatch` inputs at startup and add `state:blocked` if any required value is missing — see the manual dispatch reference below for the exact commands and required inputs.
 5. **Retrying a blocked task**: clear `state:blocked`, then re-add `agent-team`. Spec-agent treats it as a fresh dispatch (because the state:* labels are gone and the spec markers are already satisfied — actually: to redo from scratch, also delete the prior spec comment).
+
+<details>
+<summary>Manual re-dispatch reference</summary>
+
+Each `workflow_dispatch`-triggered agent reads its inputs via `${{ github.event.inputs.* }}` expressions and validates them before doing any work. A missing or unresolved input causes the agent to add `state:blocked` and post:
+
+> 🛑 agent-team: workflow_dispatch inputs were not propagated. Re-dispatch with valid inputs.
+
+Clear `state:blocked` and use the commands below to re-trigger with the correct inputs (substitute real issue/PR numbers):
+
+```bash
+# Planner — re-run after spec, or to redo planning
+gh workflow run planner-agent.lock.yml \
+  -f issue_number=<N> \
+  -f iteration=<K>       # 1 on first pass; keep current value on retry
+
+# Implementer — first attempt (no PR exists yet)
+gh workflow run implementer-agent.lock.yml \
+  -f issue_number=<N> \
+  -f iteration=<K>
+
+# Implementer — kickback (existing draft PR; pushes fix commits to it)
+gh workflow run implementer-agent.lock.yml \
+  -f issue_number=<N> \
+  -f iteration=<K> \
+  -f pr_number=<P>       # omit pr_number or leave blank to open a new PR
+
+# Reviewer — after implementation
+gh workflow run reviewer-agent.lock.yml \
+  -f pr_number=<P> \
+  -f issue_number=<N> \
+  -f iteration=<K>
+```
+
+`iteration` starts at 1 (set by the spec agent) and is bumped only by the reviewer on kickback. To find the current value, look at the most recent `<!-- agent-team:plan iteration=K -->` or `<!-- agent-team:review iteration=K -->` comment on the issue.
+
+</details>
 
 ## Limits and gotchas
 
 - **Concurrency**: each workflow uses `concurrency: group: agent-team-issue-${issue_number}` so only one role runs at a time per issue.
 - **Max iterations**: default 3 (reviewer kickback → implementer). The counter lives on the `iteration` input passed through the dispatch chain, bumped exclusively by the reviewer on kickback.
-- **Input propagation**: planner / implementer / reviewer must fail loudly if required `workflow_dispatch` inputs are missing. Do not rely on label search or recent-activity inference as a fallback.
+- **Input propagation**: planner / implementer / reviewer validate their `workflow_dispatch` inputs before doing any work. A missing or unresolved input causes the agent to add `state:blocked` and post a `🛑` error comment — then stop. Use the manual dispatch commands above to recover with correct inputs.
 - **Non-UI only**: no screenshot capture. Reviewer validates via tests/CI status + reading the diff.
 - **Cost**: a single task can easily spend 4× the tokens of a monolithic workflow. Set `timeout-minutes` conservatively and monitor the first few runs.
 - **No auto-merge**: the reviewer approves but never merges. Humans merge.
