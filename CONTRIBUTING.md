@@ -74,18 +74,52 @@ Edit the relevant `SKILL.md` or data file. Test by running the skill locally wit
 
 ## Testing
 
-There is no automated test harness for skills — they are instruction sets interpreted by Claude Code, not code with unit tests. The validation steps are:
+The repo has a three-tier test suite under `tests/`. Run it with:
+
+```bash
+bash tests/run-tests.sh
+```
+
+**Tier 2 — invariants** (fast, <1 s, always run):
+
+```bash
+bash tests/test-invariants.sh
+```
+
+Filesystem and grep checks tied to past bugs. These run automatically in CI on every PR and push to `main`. Add a new invariant when you catch a regression in review — not preemptively.
+
+**Tier 1 — skill tests** (~4–5 min, run on changes to `skills/` or `catalog/`):
+
+```bash
+bash tests/test-discover-workflows.sh
+bash tests/test-install-workflow.sh
+bash tests/test-install-agent-team.sh
+```
+
+Each test drives Claude Code with the plugin loaded and verifies the Skill tool was invoked and the response contains expected concepts. These also run in CI.
+
+**Tier 3 — E2E** (optional, 5–35 min, destructive against a real repo):
+
+```bash
+bash tests/test-e2e-install-workflow.sh
+bash tests/test-e2e-install-agent-team.sh
+bash tests/test-e2e.sh   # full spec→plan→impl→review pipeline
+```
+
+Run tier-3 manually against a scratch repo before opening a PR that changes agent-team workflow logic. See `tests/README.md` for details.
+
+**Manual validation steps** (always applicable):
 
 1. **Load the plugin**: `claude --plugin-dir .` — confirm no startup errors.
 2. **Run the skill manually**: invoke `/discover-workflows` or `/install-workflow` and walk through the flow.
 3. **Validate lock files** (if you changed `.lock.yml` files): `gh aw validate` — safe, does not recompile.
 4. **Check grep counts** (if you applied the OAuth tweak): see [skills/install-workflow/auth.md](skills/install-workflow/auth.md#step-4--verify-the-tweak-shape).
 
-Never test by committing untested changes to `main`. The installed workflows run on push to `main`, so a broken install skill or a bad `.lock.yml` will trigger a live workflow run.
+Never commit untested changes to `main`. The installed workflows run on push to `main`, so a broken install skill or a bad `.lock.yml` will trigger a live workflow run.
 
 ## Workflow files
 
-The `.github/workflows/` directory contains seven dogfooded workflows. These are managed by `gh aw` — do not edit `.lock.yml` files by hand except to apply the OAuth tweak described in [skills/install-workflow/auth.md](skills/install-workflow/auth.md).
+The `.github/workflows/` directory contains three dogfooded gh-aw workflows (`daily-repo-status`, `update-docs`, `weekly-research`) plus standard GitHub Actions workflows (`ci-tests.yml`, `agentics-maintenance.yml`, `copilot-setup-steps.yml`). The gh-aw workflows are managed by `gh aw` — do not edit `.lock.yml` files by hand except to apply the OAuth tweak described in [skills/install-workflow/auth.md](skills/install-workflow/auth.md).
 
 If a workflow `.md` source needs changing:
 
@@ -112,4 +146,4 @@ Branch naming conventions:
 
 ## Publishing (maintainers only)
 
-See the [Publishing section of the README](README.md#publishing) for the steps to submit the plugin to the Claude plugin registry.
+See the [Releases](https://github.com/verkyyi/github-agent-runner/releases) page and the [claude-plugins.dev](https://claude-plugins.dev) listing for publishing context. The plugin is also listed on [ClaudePluginHub](https://claudepluginhub.com).
