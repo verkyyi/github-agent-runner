@@ -79,7 +79,7 @@ check_required "catalog/agent-team/implementer-agent.md" '${{ github.event.input
 check_required "catalog/agent-team/reviewer-agent.md" '${{ github.event.inputs.pr_number }}' "reviewer reads workflow_dispatch inputs via documented markdown expression"
 check_required "catalog/agent-team/implementer-agent.md" "Do **not** infer the missing value from labels" "implementer must fail loud instead of label-search fallback"
 check_required "catalog/agent-team/implementer-agent.md" 'If this is blank or still the literal `${{ github.event.inputs.pr_number }}`, treat it as not set.' "implementer treats missing optional pr_number as absent instead of a live template token"
-check_required "catalog/agent-team/README.md" '${{ github.event.inputs.* }}' "README documents the manual-dispatch input contract"
+check_required "catalog/agent-team/README.md" "gh workflow run planner-agent" "README documents manual-dispatch commands with exact field names"
 
 echo ""
 echo "-- Core files exist --"
