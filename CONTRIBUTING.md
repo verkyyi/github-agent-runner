@@ -72,16 +72,39 @@ Test end-to-end against a real repo before opening a PR: run `/discover-workflow
 
 Edit the relevant `SKILL.md` or data file. Test by running the skill locally with `claude --plugin-dir .`. Describe what the skill did wrong and how the change fixes it in the PR body.
 
+### Adding or modifying an agent-team workflow role
+
+The `catalog/agent-team/` directory holds four workflow files (spec → plan → impl → review). Adding a new role or editing an existing one requires following two contracts enforced by tier-2 invariants:
+
+1. **Required input contract** — any workflow triggered by `workflow_dispatch` must check its inputs *before doing any other work*. If a required input is empty, whitespace-only, or still contains an unresolved template literal (e.g. `${{ github.event.inputs.issue_number }}`):
+   - If `issue_number` is present: add `state:blocked` to the issue and post `🛑 agent-team: workflow_dispatch inputs were not propagated. Re-dispatch with valid inputs.`
+   - If `issue_number` is missing: call `missing_data` or `report_incomplete` with reason `workflow_dispatch inputs were not propagated`.
+   - Stop. Never infer missing values from labels, recent activity, or search results.
+
+2. **Iteration guard** — check `iteration` ≤ 3 before doing any work. On excess: add `state:blocked` to the issue, post a message, do not dispatch the next stage.
+
+3. **Optional inputs** — document explicitly what "not set" means. The canonical example is `pr_number` in the implementer: treat it as absent if blank *or* if it still reads as the literal `${{ github.event.inputs.pr_number }}`.
+
+See [`catalog/agent-team/planner-agent.md`](catalog/agent-team/planner-agent.md) and [`catalog/agent-team/implementer-agent.md`](catalog/agent-team/implementer-agent.md) for reference implementations of all three patterns. When you add a new role, also add tier-2 invariants to `tests/test-invariants.sh` to pin the required phrases (follow the commit-sha comment pattern in that file).
+
 ## Testing
 
-There is no automated test harness for skills — they are instruction sets interpreted by Claude Code, not code with unit tests. The validation steps are:
+There are two testing layers:
 
-1. **Load the plugin**: `claude --plugin-dir .` — confirm no startup errors.
-2. **Run the skill manually**: invoke `/discover-workflows` or `/install-workflow` and walk through the flow.
-3. **Validate lock files** (if you changed `.lock.yml` files): `gh aw validate` — safe, does not recompile.
-4. **Check grep counts** (if you applied the OAuth tweak): see [skills/install-workflow/auth.md](skills/install-workflow/auth.md#step-4--verify-the-tweak-shape).
+- **Tier-2 invariants** (`tests/test-invariants.sh`) — fast (<1s), no Claude auth required. Catches regressions in required phrases, file structure, and version consistency. CI runs these automatically on every PR and push to `main`.
+- **Tier-1 / tier-3 behavior tests** — require Claude Code auth. Tests how skills actually behave when invoked. See [`tests/README.md`](tests/README.md) for the full matrix and running instructions.
 
-Never test by committing untested changes to `main`. The installed workflows run on push to `main`, so a broken install skill or a bad `.lock.yml` will trigger a live workflow run.
+The validation steps for any change:
+
+1. **Run tier-2 invariants first**: `./tests/test-invariants.sh` — if any assertion fails, fix it before proceeding. Fast, no network, no Claude tokens.
+2. **Load the plugin**: `claude --plugin-dir .` — confirm no startup errors.
+3. **Run the skill manually**: invoke `/discover-workflows` or `/install-workflow` and walk through the flow.
+4. **Validate lock files** (if you changed `.lock.yml` files): `gh aw validate` — safe, does not recompile.
+5. **Check grep counts** (if you applied the OAuth tweak): see [skills/install-workflow/auth.md](skills/install-workflow/auth.md#step-4--verify-the-tweak-shape).
+
+If your change adds or removes text that tier-2 invariants verify, update `tests/test-invariants.sh` accordingly. Follow the commit-sha group comment pattern (`# <sha>: reason`) used in that file so future maintainers can trace each assertion to its source bug.
+
+Never test by committing untested changes to `main`. The installed workflows run on push to `main`, so a broken skill or a bad `.lock.yml` will trigger a live workflow run.
 
 ## Workflow files
 
