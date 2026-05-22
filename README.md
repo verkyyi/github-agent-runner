@@ -123,6 +123,14 @@ catalog/
 `.lock.yml` files are marked `linguist-generated` and `merge=ours` in `.gitattributes` to prevent spurious merge conflicts.
 </details>
 
+## Publishing (maintainers only)
+
+1. Bump `version` in `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` (semver).
+2. Commit, push, and tag: `git tag v<version> && git push origin v<version>`.
+3. Create a GitHub release from the tag: `gh release create v<version> --generate-notes`.
+4. The self-hosted marketplace listing at `https://raw.githubusercontent.com/verkyyi/github-agent-runner/main/.claude-plugin/marketplace.json` updates automatically on push — no extra step needed for users who pin to `main`.
+5. Submit to the plugin registries where the plugin is listed ([claude-plugins.dev](https://claude-plugins.dev), [ClaudePluginHub](https://claudepluginhub.com)) per each registry's update/submission flow.
+
 ## Credits
 
 Built on two open-source projects from the [GitHub Next](https://githubnext.com) team:

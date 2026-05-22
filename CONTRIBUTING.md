@@ -74,7 +74,20 @@ Edit the relevant `SKILL.md` or data file. Test by running the skill locally wit
 
 ## Testing
 
-There is no automated test harness for skills — they are instruction sets interpreted by Claude Code, not code with unit tests. The validation steps are:
+The repo ships a three-tier test suite. See [`tests/README.md`](tests/README.md) for the full breakdown. Before opening a PR, run the fast tiers at minimum:
+
+```bash
+./tests/run-tests.sh              # tier 1 + tier 2 (~4–5 min)
+./tests/run-tests.sh --verbose    # with per-assertion output
+```
+
+| Tier | What it tests | Speed |
+|---|---|---|
+| 2 | `test-invariants.sh` — grep/filesystem invariants; no Claude invocation | <1s |
+| 1 | `test-*.sh` — Claude headless invocations that verify each skill's instructions are coherent | ~4–5 min total |
+| 3 | `test-e2e*.sh` — real pipeline runs against the live playground; run manually before releases | 5–35 min |
+
+Additional manual checks:
 
 1. **Load the plugin**: `claude --plugin-dir .` — confirm no startup errors.
 2. **Run the skill manually**: invoke `/discover-workflows` or `/install-workflow` and walk through the flow.
@@ -85,7 +98,7 @@ Never test by committing untested changes to `main`. The installed workflows run
 
 ## Workflow files
 
-The `.github/workflows/` directory contains seven dogfooded workflows. These are managed by `gh aw` — do not edit `.lock.yml` files by hand except to apply the OAuth tweak described in [skills/install-workflow/auth.md](skills/install-workflow/auth.md).
+The `.github/workflows/` directory contains six workflows. Three are agentic workflows managed by `gh aw` (`daily-repo-status`, `update-docs`, `weekly-research`) — do not edit their `.lock.yml` files by hand except to apply the OAuth tweak described in [skills/install-workflow/auth.md](skills/install-workflow/auth.md). The other three (`agentics-maintenance`, `ci-tests`, `copilot-setup-steps`) are standard GitHub Actions YAML.
 
 If a workflow `.md` source needs changing:
 
