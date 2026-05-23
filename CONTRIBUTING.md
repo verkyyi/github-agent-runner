@@ -74,12 +74,22 @@ Edit the relevant `SKILL.md` or data file. Test by running the skill locally wit
 
 ## Testing
 
-There is no automated test harness for skills — they are instruction sets interpreted by Claude Code, not code with unit tests. The validation steps are:
+The repo ships a [tiered test suite](tests/README.md) that runs Claude Code headlessly (`claude -p`) to assert observable skill behavior — faster and more reliable than manual walkthroughs. At minimum, run these before opening a PR:
+
+```bash
+./tests/run-tests.sh            # tier-2 invariants + tier-1 skill knowledge tests (~4-5 min)
+./tests/run-tests.sh --verbose  # show per-assertion output
+```
+
+Additional validation steps:
 
 1. **Load the plugin**: `claude --plugin-dir .` — confirm no startup errors.
 2. **Run the skill manually**: invoke `/discover-workflows` or `/install-workflow` and walk through the flow.
-3. **Validate lock files** (if you changed `.lock.yml` files): `gh aw validate` — safe, does not recompile.
-4. **Check grep counts** (if you applied the OAuth tweak): see [skills/install-workflow/auth.md](skills/install-workflow/auth.md#step-4--verify-the-tweak-shape).
+3. **Run the fast test suite**: `./tests/run-tests.sh` — catches skill instruction drift and forbidden patterns without a full end-to-end run.
+4. **Validate lock files** (if you changed `.lock.yml` files): `gh aw validate` — safe, does not recompile.
+5. **Check grep counts** (if you applied the OAuth tweak): see [skills/install-workflow/auth.md](skills/install-workflow/auth.md#step-4--verify-the-tweak-shape).
+
+For changes to `catalog/agent-team/*.md`, also run the tier-3 end-to-end tests before opening a PR — these exercise the full pipeline on a live playground repo and catch handoff breakage that fast tests miss. See [Running tier-3](tests/README.md#running-tier-3).
 
 Never test by committing untested changes to `main`. The installed workflows run on push to `main`, so a broken install skill or a bad `.lock.yml` will trigger a live workflow run.
 

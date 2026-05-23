@@ -104,15 +104,53 @@ Then apply the OAuth token tweak to each `.lock.yml` per [`skills/install-workfl
 1. Open an issue describing what you want built.
 2. Add the single label `agent-team`.
 3. Watch the thread. Each role posts its contribution as a comment; the implementer opens a draft PR that closes the issue when merged.
-4. Human override at any time: add `state:blocked` to halt, edit a comment to steer the next agent, or manually `gh workflow run` a specific role to retry a stuck stage. Manual dispatches must pass the required `workflow_dispatch` inputs, and the downstream workflow markdown must read them via `${{ github.event.inputs.* }}`.
-5. **Retrying a blocked task**: clear `state:blocked`, then re-add `agent-team`. Spec-agent treats it as a fresh dispatch (because the state:* labels are gone and the spec markers are already satisfied — actually: to redo from scratch, also delete the prior spec comment).
+4. Human override at any time: add `state:blocked` to halt, edit a comment to steer the next agent, or manually re-dispatch a specific role to retry a stuck stage. All required inputs must be explicit — agents will not infer missing values from labels or history:
+
+   ```bash
+   # Re-dispatch the planner (e.g. spec ran but planner stalled)
+   gh workflow run planner-agent.lock.yml -f issue_number=<N> -f iteration=1
+
+   # Re-dispatch the implementer — first attempt (opens a new draft PR)
+   gh workflow run implementer-agent.lock.yml -f issue_number=<N> -f iteration=<N>
+
+   # Re-dispatch the implementer — kickback (updates the existing PR)
+   gh workflow run implementer-agent.lock.yml -f issue_number=<N> -f iteration=<N> -f pr_number=<PR-N>
+
+   # Re-dispatch the reviewer
+   gh workflow run reviewer-agent.lock.yml -f pr_number=<PR-N> -f issue_number=<N> -f iteration=<N>
+   ```
+
+5. **Retrying a blocked task** (pipeline stalled, not just a single stage): clear `state:blocked`, then re-add `agent-team`. Spec-agent treats it as a fresh dispatch (because the state:* labels are gone and the spec markers are already satisfied — actually: to redo from scratch, also delete the prior spec comment).
 
 ## Limits and gotchas
 
 - **Concurrency**: each workflow uses `concurrency: group: agent-team-issue-${issue_number}` so only one role runs at a time per issue.
 - **Max iterations**: default 3 (reviewer kickback → implementer). The counter lives on the `iteration` input passed through the dispatch chain, bumped exclusively by the reviewer on kickback.
-- **Input propagation**: planner / implementer / reviewer must fail loudly if required `workflow_dispatch` inputs are missing. Do not rely on label search or recent-activity inference as a fallback.
+- **Input propagation**: planner / implementer / reviewer fail loudly if required `workflow_dispatch` inputs are missing or unresolved. When `issue_number` is present, the stalled agent adds `state:blocked` and posts: `🛑 agent-team: workflow_dispatch inputs were not propagated. Re-dispatch with valid inputs.` When `issue_number` itself is absent, the agent emits a `missing_data` safe-output and terminates. Neither case infers missing values from labels or activity. Re-dispatch manually with all inputs explicit to recover (see step 4 above).
+- **`pr_number` on the implementer**: optional input. Blank or absent means first attempt — the implementer opens a new draft PR. A real PR number (passed by the reviewer on kickback) tells the implementer to push updates to the existing PR branch instead of opening a new one.
 - **Non-UI only**: no screenshot capture. Reviewer validates via tests/CI status + reading the diff.
 - **Cost**: a single task can easily spend 4× the tokens of a monolithic workflow. Set `timeout-minutes` conservatively and monitor the first few runs.
 - **No auto-merge**: the reviewer approves but never merges. Humans merge.
 - **Dispatch visibility**: each `dispatch-workflow` call shows up as a new run in the Actions tab, linked to the upstream run. Makes the chain visible.
+
+## Troubleshooting
+
+### `state:blocked` with "workflow_dispatch inputs were not propagated"
+
+A downstream agent received an empty or unresolved input. To recover:
+
+1. Remove the `state:blocked` label.
+2. Re-dispatch the stalled role manually, passing every required input explicitly (see step 4 above). Agents never infer missing values — omitting any input will re-trigger the same block.
+
+### Implementer opened a new PR instead of updating the existing one
+
+The `pr_number` input was blank or absent during a kickback dispatch. The implementer always treats a missing `pr_number` as "first attempt → open new PR." Close the duplicate, then re-dispatch with the correct `pr_number`:
+
+```bash
+gh workflow run implementer-agent.lock.yml \
+  -f issue_number=<N> -f iteration=<N> -f pr_number=<existing-PR-number>
+```
+
+### Spec agent did nothing after the `agent-team` label was added
+
+By design: spec-agent exits silently if the issue already has any `state:*` label or a `<!-- agent-team:spec -->` block. Remove stale `state:*` labels from a prior run, then re-add the `agent-team` label. To rerun from scratch, also delete the prior spec comment.
