@@ -63,12 +63,14 @@ Sections: `spec`, `plan`, `review`. Each carries the `iteration` at the time it 
 
 ## Files
 
-| File | Trigger | Dispatches next |
-|---|---|---|
-| `spec-agent.md` | `issues.labeled` with `agent-team` (fresh issue) | `planner-agent` (issue_number, iteration=1) |
-| `planner-agent.md` | `workflow_dispatch` (issue_number, iteration) | `implementer-agent` (issue_number, iteration) |
-| `implementer-agent.md` | `workflow_dispatch` (issue_number, iteration, pr_number?) | `reviewer-agent` (issue_number, pr_number, iteration) |
-| `reviewer-agent.md` | `workflow_dispatch` (pr_number, issue_number, iteration) | `implementer-agent` on kickback (iteration+1), else nothing |
+| File | Trigger | Required inputs | Optional inputs | Dispatches next |
+|---|---|---|---|---|
+| `spec-agent.md` | `issues.labeled` with `agent-team` (fresh issue) | — | — | `planner-agent` (issue_number, iteration=1) |
+| `planner-agent.md` | `workflow_dispatch` | issue_number | iteration (default "1") | `implementer-agent` (issue_number, iteration) |
+| `implementer-agent.md` | `workflow_dispatch` | issue_number | iteration (default "1"), pr_number (default "", set by reviewer on kickback) | `reviewer-agent` (issue_number, pr_number, iteration) |
+| `reviewer-agent.md` | `workflow_dispatch` | pr_number, issue_number | iteration (default "1") | `implementer-agent` on kickback (iteration+1), else nothing |
+
+**Input validation**: every workflow fails loudly if required inputs are missing or unresolved (i.e. still contain literal `${{ github.event.inputs.* }}` template syntax, which happens when GitHub doesn't propagate `workflow_dispatch` inputs correctly). The implementer treats a blank or unresolved `pr_number` as "first implementation attempt" — this is expected on the first dispatch from the planner.
 
 ## Install
 
@@ -104,14 +106,17 @@ Then apply the OAuth token tweak to each `.lock.yml` per [`skills/install-workfl
 1. Open an issue describing what you want built.
 2. Add the single label `agent-team`.
 3. Watch the thread. Each role posts its contribution as a comment; the implementer opens a draft PR that closes the issue when merged.
-4. Human override at any time: add `state:blocked` to halt, edit a comment to steer the next agent, or manually `gh workflow run` a specific role to retry a stuck stage. Manual dispatches must pass the required `workflow_dispatch` inputs, and the downstream workflow markdown must read them via `${{ github.event.inputs.* }}`.
+4. Human override at any time: add `state:blocked` to halt, edit a comment to steer the next agent, or manually `gh workflow run` a specific role to retry a stuck stage. When manually dispatching, pass the required inputs for that role:
+   - planner: `--field issue_number=<N>`
+   - implementer: `--field issue_number=<N>` (omit `pr_number` for a fresh branch, or `--field pr_number=<P>` to push to an existing PR)
+   - reviewer: `--field pr_number=<P> --field issue_number=<N>`
 5. **Retrying a blocked task**: clear `state:blocked`, then re-add `agent-team`. Spec-agent treats it as a fresh dispatch (because the state:* labels are gone and the spec markers are already satisfied — actually: to redo from scratch, also delete the prior spec comment).
 
 ## Limits and gotchas
 
 - **Concurrency**: each workflow uses `concurrency: group: agent-team-issue-${issue_number}` so only one role runs at a time per issue.
 - **Max iterations**: default 3 (reviewer kickback → implementer). The counter lives on the `iteration` input passed through the dispatch chain, bumped exclusively by the reviewer on kickback.
-- **Input propagation**: planner / implementer / reviewer must fail loudly if required `workflow_dispatch` inputs are missing. Do not rely on label search or recent-activity inference as a fallback.
+- **Input propagation**: planner / implementer / reviewer must fail loudly if required `workflow_dispatch` inputs are missing or still appear as unresolved template literals. `pr_number` is the one intentionally optional input — the implementer treats blank or unresolved as "first impl attempt" (creates a new PR branch). Do not rely on label search or recent-activity inference as a fallback for any input.
 - **Non-UI only**: no screenshot capture. Reviewer validates via tests/CI status + reading the diff.
 - **Cost**: a single task can easily spend 4× the tokens of a monolithic workflow. Set `timeout-minutes` conservatively and monitor the first few runs.
 - **No auto-merge**: the reviewer approves but never merges. Humans merge.

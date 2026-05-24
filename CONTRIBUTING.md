@@ -74,7 +74,26 @@ Edit the relevant `SKILL.md` or data file. Test by running the skill locally wit
 
 ## Testing
 
-There is no automated test harness for skills — they are instruction sets interpreted by Claude Code, not code with unit tests. The validation steps are:
+This repo ships a tiered test suite under `tests/`. Run it with:
+
+```bash
+./tests/run-tests.sh                  # all fast tests (tier-2 invariants + tier-1 skill tests)
+./tests/run-tests.sh --verbose        # show per-assertion output
+./tests/run-tests.sh --test test-install-workflow.sh  # single test file
+```
+
+See [tests/README.md](tests/README.md) for the full tier breakdown (tier-2: grep invariants <1s; tier-1: Claude-invoked skill assertions ~4-5min; tier-3: manual E2E).
+
+**Before opening a PR**, at minimum run the tier-2 invariants and the tier-1 test for the skill you changed:
+
+| Changed area | Test to run |
+|---|---|
+| `skills/discover-workflows/` | `./tests/run-tests.sh --test test-discover-workflows.sh` |
+| `skills/install-workflow/` or `skills/install-workflow/auth.md` | `./tests/run-tests.sh --test test-install-workflow.sh` |
+| `skills/install-agent-team/` | `./tests/run-tests.sh --test test-install-agent-team.sh` |
+| Any skill | `./tests/run-tests.sh --test test-invariants.sh` (always, <1s, no Claude cost) |
+
+Additional manual steps:
 
 1. **Load the plugin**: `claude --plugin-dir .` — confirm no startup errors.
 2. **Run the skill manually**: invoke `/discover-workflows` or `/install-workflow` and walk through the flow.
