@@ -123,6 +123,18 @@ catalog/
 `.lock.yml` files are marked `linguist-generated` and `merge=ours` in `.gitattributes` to prevent spurious merge conflicts.
 </details>
 
+## Publishing
+
+> Maintainers only — requires write access to the plugin registries.
+
+After merging a release PR:
+
+1. **Bump the version** in `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` (both must match).
+2. **Create a GitHub Release** tagged `v<version>` with a changelog summary.
+3. **Submit to claude-plugins.dev** and **ClaudePluginHub** — update the listing URL if the marketplace JSON path changed. Both registries poll the `marketplace.json` URL for metadata.
+
+The marketplace listing points directly at the raw `marketplace.json` on `main`, so consumers always get the latest plugin.json on install — no registry re-submission needed for non-breaking changes that don't alter the marketplace schema.
+
 ## Credits
 
 Built on two open-source projects from the [GitHub Next](https://githubnext.com) team:
