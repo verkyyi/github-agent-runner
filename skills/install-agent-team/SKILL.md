@@ -126,7 +126,7 @@ After install, the entire per-task journey is:
 
 Escape hatches at any time: remove a state label to pause, edit a comment to steer the next agent, add `state:blocked` to halt.
 
-## Out of scope for v0.1
+## Out of scope
 
 - Uninstalling the pipeline (remove the four `.md`/`.lock.yml` files + labels manually)
 - Cross-repo install
